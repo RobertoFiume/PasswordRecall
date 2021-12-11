@@ -1,0 +1,58 @@
+trigger:
+- master
+
+pool:
+  name: AppDevelopment
+
+schedules:
+- cron: "0 0 * * *"
+  displayName: Daily midnight build
+  branches:
+    include:
+    - master
+
+steps:
+
+- task: NodeTool@0
+  inputs:
+    versionSpec: '14.x'
+  displayName: 'Install Node.js'
+
+- task: npmAuthenticate@0
+  inputs:
+    workingFile: '.npmrc'
+    customEndpoint: 'InfomindsNPM'
+
+- script: |
+    npm config set cache $(npm-cache) --global 
+  displayName: 'set npm-cache'
+
+
+- script: |
+    npm install --force
+  displayName: 'npm install and build'
+
+- script: |
+    npm run sonar:scan
+  displayName: 'run SonarQube analysis'
+  continueOnError: true
+
+- script: |
+    npm run web:release
+  displayName: 'npm run web:release'
+
+- script: |
+    npm run electron:release
+  displayName: 'npm run electron:release'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'build'
+    ArtifactName: 'drop/web'
+    publishLocation: 'Container'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'electron/dist/Expenses.exe'
+    ArtifactName: 'drop/windows'
+    publishLocation: 'Container'

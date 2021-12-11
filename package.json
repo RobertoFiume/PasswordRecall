@@ -1,0 +1,291 @@
+{
+  "name": "PasswordRecall",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "./",
+  "author": "Infominds",
+  "scripts": {
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "android:clean": "cd android && ./gradlew clean && cd ../",
+    "android:cleanHW": "cd .\\android\\; .\\gradlew clean; cd ..",
+    "ios": "react-native run-ios",
+    "ios:device": "react-native run-ios --device \"iPhone di Roberto\"",
+    "ios:device-iPhoneSE": "react-native run-ios --device \"iPhone von Peter\"",
+    "ios:device-ipad": "react-native run-ios --device \"Roberto Fiume iPad 2\"",
+    "ios:simulator-iphone7": "react-native run-ios --simulator \"iPhone 7\"",
+    "ios:build": "npx pod-install ios",
+    "ios:clean": "cd ios && xcodebuild clean && cd ../",
+    "web": "node web/scripts/start.js",
+    "web:build": "node web/scripts/build.js",
+    "web:release": "node web/scripts/build.js",
+    "web:test": "node web/scripts/test.js --env=jsdom",
+    "web:serve": "npx serve build",
+    "electron": "concurrently \"cross-env BROWSER=none npm run web\" \"wait-on http://localhost:3000 && electron web/public/electron-dev.js\"",
+    "electron:release": "npm run web:build && npm run electron:generate-icon && electron-builder --publish=always",
+    "electron:generate-icon": "./node_modules/.bin/electron-icon-maker --input=./src/assets/img/icon.png --output=./electron/assets/generated",
+    "setup": "npm install && ios:build",
+    "test": "jest",
+    "lint": "eslint .",
+    "clean": "npx react-native-clean-project",
+    "clean:watchman": "watchman watch-del-all",
+    "version:update": "npx react-native-version --never-amend",
+    "version:alpha": "npm version patch && npm run version:update",
+    "version:beta": "npm version minor && npm run version:update",
+    "version:release": "npm version major && npm run version:update",
+    "sonar:scan": "node sonar-scanner.js",
+    "sonar:open": "open http://srvimsvc01:9000/",
+    "dev-tools": "npx react-devtools"
+  },
+  "dependencies": {
+    "@babel/core": "7.9.0",
+    "@dudigital/react-native-zoomable-view": "^1.0.16",
+    "@infominds/react-native-components": "^0.2.0",
+    "@infominds/react-native-license": "0.0.85",
+    "@react-native-community/async-storage": "^1.12.1",
+    "@react-native-community/checkbox": "^0.5.6",
+    "@react-native-community/datetimepicker": "^3.0.9",
+    "@react-native-community/masked-view": "^0.1.11",
+    "@react-native-community/netinfo": "^6.0.0",
+    "@react-native-community/picker": "^1.8.1",
+    "@react-native-community/progress-bar-android": "^1.0.4",
+    "@react-native-community/progress-view": "^1.2.3",
+    "@react-native-community/slider": "^3.0.3",
+    "@react-navigation/bottom-tabs": "^5.11.2",
+    "@react-navigation/native": "^5.8.10",
+    "@react-navigation/stack": "^5.12.8",
+    "@sentry/react-native": "^2.6.0",
+    "@types/react-native-base64": "^0.1.0",
+    "@types/react-native-sqlite-storage": "^5.0.0",
+    "antd": "^4.15.5",
+    "appcenter": "4.0.2",
+    "appcenter-analytics": "4.0.2",
+    "appcenter-crashes": "4.0.2",
+    "detect-browser-language": "0.0.2",
+    "flipper": "^0.96.1",
+    "modal-react-native-web": "^0.2.0",
+    "moment": "^2.29.1",
+    "pdf-lib": "^1.15.0",
+    "radio-buttons-react-native": "^1.0.4",
+    "react": "17.0.2",
+    "react-dark-mode-toggle": "0.2.0",
+    "react-dom": "16.13.1",
+    "react-native": "0.65.1",
+    "react-native-app-intro-slider": "^4.0.4",
+    "react-native-base64": "^0.1.1",
+    "react-native-camera": "^3.40.0",
+    "react-native-color-palette": "^2.2.0",
+    "react-native-device-info": "^7.0.2",
+    "react-native-electron": "^0.14.0",
+    "react-native-exception-handler": "^2.10.9",
+    "react-native-final-tree-view": "^2.0.3",
+    "react-native-fs": "^2.16.6",
+    "react-native-gesture-handler": "^1.10.3",
+    "react-native-image-base64": "^0.1.4",
+    "react-native-image-pan-zoom": "^2.1.12",
+    "react-native-image-picker": "^4.0.6",
+    "react-native-image-resizer": "^1.4.5",
+    "react-native-mo-fs": "^0.1.24",
+    "react-native-modal": "^11.5.6",
+    "react-native-modal-datetime-picker": "^9.1.0",
+    "react-native-permissions": "^2.2.2",
+    "react-native-picker-select": "^8.0.2",
+    "react-native-qrcode-scanner": "^1.4.1",
+    "react-native-reanimated": "^1.13.3",
+    "react-native-safe-area-context": "^3.3.2",
+    "react-native-screens": "^2.18.1",
+    "react-native-splash-screen": "^3.2.0",
+    "react-native-sqlite-storage": "^6.0.1",
+    "react-native-super-grid": "^4.1.3",
+    "react-native-svg": "^12.1.0",
+    "react-native-vector-icons": "^7.1.0",
+    "react-native-web": "0.13.18",
+    "rn-fetch-blob": "^0.12.0",
+    "serilogger": "^0.3.1",
+    "use-persisted-state": "^0.3.3"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/plugin-transform-react-jsx": "^7.12.1",
+    "@svgr/webpack": "4.3.3",
+    "@types/react": "^16.9.53",
+    "@types/react-native": "^0.63.30",
+    "@types/react-native-vector-icons": "^6.4.6",
+    "@types/react-native-video": "^5.0.8",
+    "@types/use-persisted-state": "^0.3.0",
+    "@typescript-eslint/eslint-plugin": "^2.10.0",
+    "@typescript-eslint/parser": "^2.10.0",
+    "add": "^2.0.6",
+    "babel-eslint": "10.1.0",
+    "babel-jest": "^24.9.0",
+    "babel-loader": "8.1.0",
+    "babel-plugin-named-asset-import": "^0.3.6",
+    "babel-preset-react-app": "^9.1.2",
+    "camelcase": "^5.3.1",
+    "case-sensitive-paths-webpack-plugin": "2.3.0",
+    "chalk": "^2.4.2",
+    "concurrently": "^5.3.0",
+    "cross-env": "^7.0.2",
+    "css-loader": "3.4.2",
+    "dotenv": "8.2.0",
+    "dotenv-expand": "5.1.0",
+    "electron": "^10.1.5",
+    "electron-builder": "^22.9.1",
+    "electron-icon-maker": "0.0.5",
+    "electron-is-dev": "^1.2.0",
+    "electron-packager": "^15.1.0",
+    "eslint": "^6.6.0",
+    "eslint-config-react-app": "^5.2.1",
+    "eslint-loader": "3.0.3",
+    "eslint-plugin-flowtype": "4.6.0",
+    "eslint-plugin-import": "2.20.1",
+    "eslint-plugin-jsx-a11y": "6.2.3",
+    "eslint-plugin-react": "7.19.0",
+    "eslint-plugin-react-hooks": "^1.6.1",
+    "file-loader": "4.3.0",
+    "fs-extra": "^8.1.0",
+    "html-webpack-plugin": "4.0.0-beta.11",
+    "identity-obj-proxy": "3.0.0",
+    "jest": "24.9.0",
+    "jest-environment-jsdom-fourteen": "1.0.1",
+    "jest-resolve": "24.9.0",
+    "jest-watch-typeahead": "0.4.2",
+    "metro-react-native-babel-preset": "^0.66.0",
+    "mini-css-extract-plugin": "0.9.0",
+    "optimize-css-assets-webpack-plugin": "5.0.3",
+    "pnp-webpack-plugin": "1.6.4",
+    "postcss-flexbugs-fixes": "4.1.0",
+    "postcss-loader": "3.0.0",
+    "postcss-normalize": "8.0.1",
+    "postcss-preset-env": "6.7.0",
+    "postcss-safe-parser": "4.0.1",
+    "react-app-polyfill": "^1.0.6",
+    "react-dev-utils": "^11.0.3",
+    "react-native-codegen": "^0.0.7",
+    "react-native-rename": "^2.5.0",
+    "resolve": "1.15.0",
+    "resolve-url-loader": "3.1.1",
+    "sass-loader": "8.0.2",
+    "semver": "6.3.0",
+    "sonarqube-scanner": "^2.8.0",
+    "style-loader": "0.23.1",
+    "terser-webpack-plugin": "2.3.5",
+    "ts-pnp": "1.1.6",
+    "typescript": "^4.0.3",
+    "url-loader": "2.3.0",
+    "wait-on": "^5.2.0",
+    "webpack": "4.42.0",
+    "webpack-dev-server": "3.10.3",
+    "webpack-manifest-plugin": "2.2.0",
+    "webpack-sources": "^1.4.3",
+    "workbox-webpack-plugin": "4.3.1"
+  },
+  "main": "build/electron.js",
+  "build": {
+    "productName": "Password Recall",
+    "appId": "eu.infominds.ErogTestApp",
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "./electron/assets/generated/icons/win/icon.ico"
+    },
+    "mac": {
+      "icon": "./electron/assets/generated/icons/mac/icon.icns"
+    },
+    "dmg": {
+      "background": "./electron/assets/mac/background.png",
+      "window": {
+        "width": 900,
+        "height": 530
+      }
+    },
+    "files": [
+      "build/**/*",
+      "./electron/assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "build/static",
+        "to": "static"
+      }
+    ],
+    "portable": {
+      "artifactName": "PasswordRecall.exe"
+    },
+    "directories": {
+      "output": "electron/dist",
+      "buildResources": "electron/assets"
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "jest": {
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/**/*.d.ts"
+    ],
+    "setupFiles": [
+      "react-app-polyfill/jsdom"
+    ],
+    "setupFilesAfterEnv": [
+      "./setupTests.js"
+    ],
+    "testMatch": [
+      "<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}",
+      "<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}"
+    ],
+    "testEnvironment": "jest-environment-jsdom-fourteen",
+    "transform": {
+      "^.+\\.(js|jsx|ts|tsx)$": "<rootDir>/node_modules/babel-jest",
+      "^.+\\.css$": "<rootDir>/web/config/jest/cssTransform.js",
+      "^(?!.*\\.(js|jsx|ts|tsx|css|json)$)": "<rootDir>/web/config/jest/fileTransform.js"
+    },
+    "transformIgnorePatterns": [
+      "[/\\\\]node_modules[/\\\\].+\\.(js|jsx|ts|tsx)$",
+      "^.+\\.module\\.(css|sass|scss)$"
+    ],
+    "modulePaths": [],
+    "moduleNameMapper": {
+      "^react-native$": "react-native-web",
+      "^.+\\.module\\.(css|sass|scss)$": "identity-obj-proxy"
+    },
+    "moduleFileExtensions": [
+      "web.js",
+      "js",
+      "web.ts",
+      "ts",
+      "web.tsx",
+      "tsx",
+      "json",
+      "web.jsx",
+      "jsx",
+      "node"
+    ],
+    "watchPlugins": [
+      "jest-watch-typeahead/filename",
+      "jest-watch-typeahead/testname"
+    ]
+  },
+  "babel": {
+    "presets": [
+      "react-app"
+    ]
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  }
+}
