@@ -1,0 +1,5 @@
+export default {
+    DEMO_USERNAME: 'ALEXU',
+    DEMO_PASSWORD: '123',
+    DEMO_LICENSE_KEY: 'DEMO-RXEXP'
+}
