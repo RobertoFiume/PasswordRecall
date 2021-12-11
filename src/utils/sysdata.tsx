@@ -151,14 +151,14 @@ class SysData {
 
                   if (lastsection != sectionFields.categoryid) {
                     lastsection = sectionFields.categoryid;
-         
                     result.push({title: sectionTitle, count: cards.length, data: cards});
                   
                     sectionTitle = ""; 
-                    passwordcard = [];
+                    cards = [];
                   }
 
                   sectionTitle = sectionFields.categoryname;
+
                   cards.push({id: cardFields.categoryid, categoryid: cardFields.categoryid, description: cardFields.cardname, 
                               username: cardFields.username, password: cardFields.password,
                               note: cardFields.note, url: cardFields.url, pincode: cardFields.pincode});

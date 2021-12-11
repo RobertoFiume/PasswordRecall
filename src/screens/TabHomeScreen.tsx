@@ -38,10 +38,10 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
         db.getCards()
           .then((section: CardSection[])  => {
             data = section;
-   
+            
             setData(data);
             setLoading(false);
-
+         
             console.log("has cards: ",data != []);
           }).catch((error) => {
             console.log("Error on get cards",error);
@@ -118,7 +118,7 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
       id = {item.id}
       title = {item.description}
       categoryid = {item.categoryid}
-      description = {null}
+      //description = {null}
       username = {item.username}
       password = {item.password}
       note = {item.note}
