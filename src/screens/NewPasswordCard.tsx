@@ -3,6 +3,8 @@ import {
     Screen, Text, Colors, Icon, LanguageContext, ThemeContext, Title,
     Input, Button, Note, Layout, ImValidators, LoadingIndicator, ButtonType
 } from '@infominds/react-native-components';
+import 'moment/locale/it'
+import 'moment/locale/de'
 import { TouchableOpacity, ScrollView, View, StyleSheet, Platform, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/core';
 import Label from '../components/Label';
@@ -132,7 +134,7 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
                     </View>
                 </View>
 
-                <Label text = {'Descrizione'} />
+                <Label text = {lang.DESCRIPTION} />
                 <Input
                     editable = {!readOnly}
                     value = {description}
@@ -150,16 +152,16 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
                     }}
                 />
 
-                <Label text = {'Nome utente'} />
+                <Label text = {lang.USERNAME} />
                 <Input
                     editable = {!readOnly}
                     value = {username}
                     onChangeText={(value: string) => {
-                      setNote(value);
+                      setUserName(value);
                     }}
                 />
 
-                <Label text = {'password'} />
+                <Label text = {lang.PASSWORD} />
                 <PasswordInput
                     editable = {!readOnly}
                     autoCorrect = {false} 
@@ -171,13 +173,13 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
                     placeholder={''}                
                 />
 
-                <Label text = {"Note"} />
+                <Label text = {lang.NOTE} />
                 <Note 
+                    editable = {!readOnly}
                     placeholder={''}
                     value = {note}
-                    editable = {!readOnly}
                     onChangeText={(value: string) => {
-                      setNote(note);
+                      setNote(value);
                     } } 
                 />
             </ScrollView >
