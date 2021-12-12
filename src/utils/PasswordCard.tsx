@@ -6,9 +6,8 @@ import { formatPriceString } from '../utils/PriceUtils';
 
 export default function PasswordCard(
     props: {
-        id?: string,
-        title?: string,
         categoryid?: string,
+        cardid?: string,
         description?: string,
         username?: string,
         password?: string,
@@ -16,6 +15,7 @@ export default function PasswordCard(
         pincode?: string ,
         url?: string | JSX.Element,
         date?: any,
+        description2?: string,
 
         onCardPress: () => void,
         onArrowPress?: () => void,
@@ -35,7 +35,7 @@ export default function PasswordCard(
                         {props.hasDot &&
                             <View style={styles.dot} />
                         }
-                        <Text style={{ fontWeight: 'bold', fontSize: 18, flexWrap: 'wrap' }}>{props.title}</Text>
+                        <Text style={{ fontWeight: 'bold', fontSize: 18, flexWrap: 'wrap' }}>{props.description}</Text>
                     </View>
                     <View style={{ marginTop: 0 }}>
                         {/* {props.desc ? <Text>{props.desc}</Text> : <></>} */}
@@ -44,7 +44,7 @@ export default function PasswordCard(
                         {props.date ? <Text style={{ marginTop: 0, flexWrap: 'wrap' }}>{Moment(props.date).format('DD/MM/YYYY')}</Text> : <></>}
                     </View>
                 </View>
-                <Text style={{ alignSelf: 'center', textAlign: 'right', fontWeight: 'bold', fontSize: 20, flex: 2, flexWrap: 'nowrap' }}>{formatPriceString(props.description)}</Text>
+                <Text style={{ alignSelf: 'center', textAlign: 'right', fontWeight: 'bold', fontSize: 20, flex: 2, flexWrap: 'nowrap' }}>{formatPriceString(props.description2)}</Text>
 
             </TouchableOpacity>
         </CardBasic>

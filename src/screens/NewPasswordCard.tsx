@@ -11,7 +11,8 @@ import Label from '../components/Label';
 import { useCallback, useState } from 'react';
 import LoadingSpinnerModal from '../components/LoadingSpinnerModal'
 import PasswordInput from '../components/PasswordInput'
-import Card from '../utils/sysdata';
+import SysData, {Card,CATEGORY_DEFAULT} from '../utils/sysdata';
+import createGuid from "react-native-create-guid";
 
 String.prototype.replaceAll = function (search: any, replacement: any) {
     return this.split(search).join(replacement);
@@ -25,8 +26,8 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
     const [showErrors, setShowErrors] = useState(false);
     const [disableButton, setDisableButton] = useState(false);
    
-    const [id, setID] = useState<string>();
     const [categoryid, setCategoryid] = useState<string>();
+    const [cardid, setCardid] = useState<string>();
     const [description, setDescription] = useState<string>();
     const [username, setUserName] = useState<string>();
     const [password, setPassword] = useState<string>();
@@ -38,19 +39,26 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
     const readOnly = props.route?.params?.readOnly as boolean | false;
 
     function setPasswordCardoModify() {
-        if (!detail) 
-            return;
-
-        console.debug('detail', detail);
-
-        setID(detail.id);
-        setCategoryid(detail.categoryid);
-        setDescription(detail.description);
-        setUserName(detail.username);
-        setPassword (detail.password);
-        setNote(detail.note);
-        setPinCode(detail.pincode);
-        setUrl(detail.url);
+        if (detail) { 
+            setCategoryid(detail.categoryid);
+            setCardid(detail.cardid);
+            setDescription(detail.description);
+            setUserName(detail.username);
+            setPassword (detail.password);
+            setNote(detail.note);
+            setPinCode(detail.pincode);
+            setUrl(detail.url);
+        }
+        else {
+            setCategoryid(null);
+            setCardid(null);
+            setDescription(null);
+            setUserName(null);
+            setPassword (null);
+            setNote(null);
+            setPinCode(null);
+            setUrl(null);
+        }
     }
 
     React.useEffect(() => {
@@ -66,36 +74,89 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
 
     }, []));
 
-    async function onSave(isUpate: boolean = false) {
+    async function onSave(isUpdate: boolean = false) {
         console.debug("save");
+        console.info('call save',isUpdate);
 
-        if (!request) {
-            setShowErrors(true);
-            return false;
-        } else {
-            console.debug(isUpate ? 'PUT' : 'POST', request);
+        let success: boolean = false;
 
-            let result: any;
-           /*
-            if (!isUpate) {
-                result = await useApi.postExpense(request);
-            } else
-                result = await useApi.putExpense(request);
-*/
-            if (hasUplpadImagePermission)
-                await UploadImages(result.id);
+        const card: Card = ({
+           "categoryid": categoryid,
+           "cardid":  cardid,
+           "description": description,
+           "url": url,
+           "username": username,
+           "password": password,
+           "note": note
+        });
+          
+        if (!isUpdate) {
+          if (card.cardid == null) {
+            await  createGuid()
+              .then((guid) => {
+                card.cardid = guid; 
 
-            if (hasUplpadImagePermission && isUpate) {
-                
-            }
-            return result;
+                console.debug('guid:',guid);
+              });
+          }
+        
+          if (card.categoryid === null)
+            card.categoryid = CATEGORY_DEFAULT;
         }
+
+        const db: SysData = new SysData("prova2.db");
+
+        await db.openDatabse().then((result: boolean) => {
+           console.debug('Opened database:',result); 
+         
+           if (isUpdate) {
+              success = db.updateCard(card)
+                .then((result: boolean)  => {
+                    console.debug('Updated card',result);
+                    return result; 
+                }).catch((error) => {
+                    console.error("Error on update cards",error);
+                });
+            } 
+            else {
+              success = db.insertCard(card)
+                .then((result: boolean)  => {
+                    console.debug('Insert card',result);
+                    return result; 
+                }).catch((error) => {
+                    console.error("Error on insert cards",error);
+                });
+            } 
+         })
+         .catch((error) => {
+             console.error("Error on open database",error);
+         });
+     
+         return success;
     }
 
-  
-    console.info('open view');
-    return (
+    async function onDelete(cardid: string)
+    {
+        const db: SysData = new SysData("prova2.db");
+
+        await db.openDatabse().then((result: boolean) => {
+           console.debug('Opened database:',result); 
         
+           db.deleteCard(cardid)
+            .then((result: boolean)  => {
+                console.debug('Delete card',result);
+                return result; 
+            }).catch((error) => {
+                console.error("Error on delete cards",error);
+            });
+            
+         })
+         .catch((error) => {
+             console.error("Error on open database",error);
+         });
+    }
+
+    return (
         <Screen backgroundImage='ellipse8' style={{ padding: 0 }} scrollable={false}  >
             {/* <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "position" : undefined}> */}
             <ScrollView style={{ padding: 10 }}>
@@ -110,7 +171,11 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
                                                 props.navigation.navigate('Root');
                                             }
                                         },
-                                        { text: lang.BACK_NO, onPress: () => null }
+                                        { 
+                                            text: lang.BACK_NO, onPress: () => {
+                                             
+                                            }
+                                        }
                                     ]);
                                 } else {
                                     props.navigation.navigate('Root');
@@ -182,6 +247,54 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
                       setNote(value);
                     } } 
                 />
+
+                {!readOnly &&
+                    <Button
+                        style = {{ marginBottom: 20 }}
+                        title = {lang.SAVE}
+                        
+                        onPress={() => {
+                            setDisableButton(true);
+                            const isUpdate = detail !== undefined;
+                            onSave(isUpdate)
+                                .then((result: boolean) => {
+                                    if (result)
+                                        props.navigation.navigate('Root');
+                                    else {
+                                        console.error('could not create card'); // todo show message
+                                    }
+                                })
+                                .catch((error) => {
+                                    console.error(error);
+                                })
+                                .finally(() => {
+                                    setDisableButton(false);
+                                })
+                        }}
+                    />
+                }
+
+                {(detail && !readOnly) ?
+                    <Button
+                        style={{ marginBottom: 20 }}
+                        onPress={() => {
+                            if (detail && Platform.OS !== 'web') {
+                                Alert.alert(lang.BACK_TEXT, '', [
+                                    {
+                                        text: lang.BACK_YES, onPress: () => {
+                                            onDelete(cardid);
+                                            props.navigation.navigate('Root');
+                                            console.log('ha confermato la cancellazione');
+                                        }
+                                    },
+                                    { text: lang.BACK_NO, onPress: () => null }
+                                ]);
+                            }
+                        }}
+
+                        type={ButtonType.danger}
+                        title={lang.DELETE} /> : <></>
+                }
             </ScrollView >
 
             <LoadingSpinnerModal visible={disableButton} />

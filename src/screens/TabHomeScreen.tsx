@@ -34,7 +34,7 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
 
      db.openDatabse().then((result: boolean) => {
         setLoading(true);  
-        console.log('Opened database:',result); 
+        console.debug('Opened database:',result); 
         db.getCards()
           .then((section: CardSection[])  => {
             data = section;
@@ -42,17 +42,15 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
             setData(data);
             setLoading(false);
          
-            console.log("has cards: ",data != []);
+            console.debug("has cards: ",data != []);
           }).catch((error) => {
-            console.log("Error on get cards",error);
+            console.error("Error on get cards",error);
           });
-        
       })
       .catch((error) => {
-          console.log("Error on open database",error);
+          console.error("Error on open database",error);
           setLoading(false);
       });
-    
   }
 
   useFocusEffect(useCallback(() => {
@@ -93,8 +91,8 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
      
       onCardPress={() => {
         const detail: Card = ({
-          id: item.id,
           categoryid: item.categoryid,
+          cardid: item.cardid,
           description: item.description,
           username: item.username,
           password: item.password,
@@ -104,21 +102,11 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
         });
 
         props.navigation.navigate('NewPasswordCard', { detail: detail, readOnly: false });
-       // setOpenDetailLoading(true);
-        /*
-        useApi.getExpensesDetail(item.id)
-          .then((res: ExpenseDetail) => {
-            props.navigation.navigate('NewExpense', { detail: res, readOnly: false });
-          })
-          .catch((error) => console.error(error))
-          .finally(() => setOpenDetailLoading(false));
-          */
       }}
     
-      id = {item.id}
-      title = {item.description}
       categoryid = {item.categoryid}
-      //description = {null}
+      cardid = {item.cardid}
+      description = {item.description}
       username = {item.username}
       password = {item.password}
       note = {item.note}

@@ -7,13 +7,14 @@
 
 import * as React from 'react';
 import SQLite, { SQLiteDatabase } from 'react-native-sqlite-storage';
+import createGuid from "react-native-create-guid";
 
 SQLite.DEBUG(false);
 SQLite.enablePromise(true);
 
 export interface Card {
-  id: string;
   categoryid: string;
+  cardid: string;
   description: string;
   username: string;
   password: string;
@@ -27,6 +28,8 @@ export interface CardSection {
   count: number;
   data: Card[];
 }
+
+export const CATEGORY_DEFAULT = "{EDCA3EA3-5064-407D-9099-B0CAEEA385DE}";
 
 class SysData {
     private dabaseName: string = "";
@@ -65,75 +68,85 @@ class SysData {
                                   "    LEFT OUTER JOIN CATEGORIES CT ON (C.CATEGORYID=CT.CATEGORYID)	" +
                                  " ORDER BY CT.DESCRIPTION,C.DESCRIPTION";
 
+    private SQL_UPDATE_CARD = "UPDATE CARDS SET DESCRIPTION=?,URL=?,USERNAME=?,PASSWORD=?,NOTE=? " +
+                              "  WHERE CARDID=?";
+
+    private SQL_INSERT_CARD = "INSERT INTO CARDS (CARDID,CATEGORYID,DESCRIPTION,URL,USERNAME,PASSWORD,NOTE) " +
+                              " VALUES (?,?,?,?,?,?,?) ";
+   
+    private SQL_DELETE_CARD =  "DELETE FROM CARDS WHERE CARDID=?";
+                               
     constructor(databasename: string)
     {
       this.dabaseName = databasename;
       this.db = null;
-      console.log("database name: " + this.dabaseName);
+      console.debug("database name: " + this.dabaseName);
     }
 
-
     async openDatabse(): boolean {
-      let success: Boolean = false;
-      this.closeDatabase();
+      let success: boolean = false;
+      await this.closeDatabase();
 
-      console.log('Open database ...');
+      console.debug('Open database ...');
       // wait to open database
-      await SQLite.openDatabase({name: this.dabaseName, key: this.ENCRYPT_KEY, createFromLocation: 1}).then((DBConnection) => {
-        this.db = DBConnection;
-       // console.log('Database info',this.db); 
-        this.createTables(this.db);
-        success = true;
+      await SQLite.openDatabase({name: this.dabaseName, key: this.ENCRYPT_KEY, createFromLocation: 1})
+          .then((DBConnection) => {
+          this.db = DBConnection;
+        // console.log('Database info',this.db); 
+          this.createTables(this.db);
+          success = true;
 
-        console.log('Database opened',success);
-      }).catch((error) => {
-        success = false;
-        console.log("Error on open database",error);
+          console.debug('Database opened',success);
+        }
+        ).catch((error) => {
+            success = false;
+            console.error("Error on open database",error);
 
-        throw new Error(error); //raise error
-      });
+            throw new Error(error); //raise error
+          }
+        );
        
       return success;
    }
 
-    closeDatabase(): void {
+   closeDatabase(): void {
       if (this.db) {
-        console.log("Closing database ...");
+        console.debug("Closing database ...");
 
         this.db.close().then((status) => {
           console.log("Database closed",status);
       }).catch((error) => {
-        console.log("Error on close database",error);
+        console.error("Error on close database",error);
       });
 
       this.db = null;
       } else {
-        console.log("Database was not opened");
+        console.debug("Database was not opened");
       }
-    }
+   }
 
-    private createTables(db: SQLiteDatabase) {
+   private createTables(db: SQLiteDatabase) {
       if (!db)
         return;
 
-      console.log("Create tables if not exists ...");
+      console.debug("Create tables if not exists ...");
       
       db.executeSql(this.SQL_CREATE_USERS).catch((error) => {
         console.log("Error on create table",error);
       });
 
       db.executeSql(this.SQL_CREATE_CARDS).catch((error) => {
-        console.log("Error on create table",error);
+        console.debug("Error on create table",error);
       });
 
       db.executeSql(this.SQL_CREATE_CATEGORY).catch((error) => {
-        console.log("Error on create table",error);
+        console.debug("Error on create table",error);
       });
 
-      console.log("Table created");
-    }
+      console.debug("Table created");
+   }
 
-    getCards(): CardSection[]  {
+   getCards(): CardSection[]  {
       return new Promise<CardSection[]>((resolve, reject) => {
         this.db.executeSql(this.SQL_CARDATA,[])
             .then(([resultset]) => {
@@ -144,7 +157,7 @@ class SysData {
                        
                 for (let i = 0; i < resultset.rows.length; i++) {
                   const sectionFields = {categoryid, categoryname} = resultset.rows.item(i);
-                  const cardFields = {categoryid, categoryid, cardname, url, username, password, note, pincode} = resultset.rows.item(i);
+                  const cardFields = {categoryid, cardid, cardname, url, username, password, note, pincode} = resultset.rows.item(i);
                  
                   if (lastsection == "")  
                     lastsection = sectionFields.categoryid;
@@ -159,9 +172,14 @@ class SysData {
 
                   sectionTitle = sectionFields.categoryname;
 
-                  cards.push({id: cardFields.categoryid, categoryid: cardFields.categoryid, description: cardFields.cardname, 
-                              username: cardFields.username, password: cardFields.password,
-                              note: cardFields.note, url: cardFields.url, pincode: cardFields.pincode});
+                  cards.push({categoryid: cardFields.categoryid, 
+                              cardid: cardFields.cardid, 
+                              description: cardFields.cardname, 
+                              username: cardFields.username, 
+                              password: cardFields.password,
+                              note: cardFields.note, 
+                              url: cardFields.url, 
+                              pincode: cardFields.pincode});
                 }
                 
                 if (sectionTitle != "")
@@ -177,6 +195,70 @@ class SysData {
                 reject(error);
             });
     });
+  }
+
+  async updateCard(card: Card): boolean {
+    let success: boolean = false;
+    
+    await this.db.transaction((resultset) => {
+      resultset.executeSql(this.SQL_UPDATE_CARD,
+                           [card.description, card.url, card.username, card.password, card.note, card.cardid],(resultset, results) => {
+          console.debug('Results', results.rowsAffected);
+          if (results.rowsAffected > 0) {
+            success = true;
+            console.debug('Update ok');
+          } 
+          else {
+            console.debug('Update Failed');
+          }
+        }
+      );
+    });
+
+    return success;
+  }
+
+  async insertCard(card: Card): boolean {
+    let success: boolean = false;
+  
+    await this.db.transaction((resultset) => {
+      resultset.executeSql(this.SQL_INSERT_CARD,
+                           [card.cardid, card.categoryid,
+                            card.description, card.url, 
+                            card.username, card.password, card.note],(resultset, results) => {
+          console.debug('Results', results.rowsAffected);
+          if (results.rowsAffected > 0) {
+            success = true;
+            console.debug('Insert ok');
+          } 
+          else {
+            console.debug('Insert Failed');
+          }
+        }
+      );
+    });
+   
+    return success;
+  }
+
+  async deleteCard(cardid: string): boolean {
+    let success: boolean = false;
+  
+    await this.db.transaction((resultset) => {
+      resultset.executeSql(this.SQL_DELETE_CARD,[cardid],(resultset, results) => {
+          console.debug('Results', results.rowsAffected);
+          if (results.rowsAffected > 0) {
+            success = true;
+            console.debug('Delete ok');
+          } 
+          else {
+            console.debug('Delete Failed');
+          }
+        }
+      );
+    });
+   
+    return success;
   }
 }
 
