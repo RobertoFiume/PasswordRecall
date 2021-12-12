@@ -10,9 +10,11 @@ import { useFocusEffect } from '@react-navigation/core';
 import Label from '../components/Label';
 import { useCallback, useState } from 'react';
 import LoadingSpinnerModal from '../components/LoadingSpinnerModal'
+import SearchInputModal from '../components/SearchInputModal'
 import PasswordInput from '../components/PasswordInput'
-import SysData, {Card,CATEGORY_DEFAULT} from '../utils/sysdata';
+import SysData, {Card,CategoryType,CATEGORY_DEFAULT} from '../utils/sysdata';
 import createGuid from "react-native-create-guid";
+
 
 String.prototype.replaceAll = function (search: any, replacement: any) {
     return this.split(search).join(replacement);
@@ -34,11 +36,28 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
     const [note, setNote] = useState<string>();
     const [pincode, setPinCode] = useState<string>();
     const [url,setUrl] = useState<string>();
+    const [categoryTypes, setCategoryTypes] = useState<CategoryType[]>();
+    const [categoryType, setCategoryType] = useState<CategoryType>();
 
     const detail = props.route?.params?.detail as Card;
     const readOnly = props.route?.params?.readOnly as boolean | false;
 
     function setPasswordCardoModify() {
+        let db: SysData = new SysData("prova2.db");
+
+        db.openDatabse().then((result: boolean) => {
+            console.debug('Opened database:',result); 
+            db.getCategoryTypes()
+                .then((categoryTypes: CategoryType[])  => {
+                    setCategoryTypes(categoryTypes);
+                }).catch((error) => {
+                    console.error("Error on get categories",error);
+                });
+        })
+        .catch((error) => {
+            console.error("Error on open database",error);
+        });
+
         if (detail) { 
             setCategoryid(detail.categoryid);
             setCardid(detail.cardid);
@@ -48,6 +67,8 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
             setNote(detail.note);
             setPinCode(detail.pincode);
             setUrl(detail.url);
+
+            setCategoryType(categoryTypes?.find((category: CategoryType) => { return category.categoryid === detail.categoryid }));
         }
         else {
             setCategoryid(null);
@@ -81,7 +102,7 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
         let success: boolean = false;
 
         const card: Card = ({
-           "categoryid": categoryid,
+           "categoryid": categoryType?.categoryid,
            "cardid":  cardid,
            "description": description,
            "url": url,
@@ -198,6 +219,18 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
                         <Title style={{ color: theme.text }}>{detail?.description || lang.NEW_REQUEST}</Title>
                     </View>
                 </View>
+
+                <Label text={'Categoria'} />
+                <SearchInputModal
+                    text = {''}
+                    data = {categoryTypes}
+                    value = {categoryType}
+                    editable = {true}
+                    onSelect = {setCategoryType}
+                    searchString={item => item.description}
+                    renderSelected={(item: CategoryType) => item?.description}
+                    renderItemContent={({ item }: { item: CategoryType }) => <Text>{item.description}</Text>}
+                />
 
                 <Label text = {lang.DESCRIPTION} />
                 <Input

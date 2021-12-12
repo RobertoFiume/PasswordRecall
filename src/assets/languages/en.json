@@ -43,5 +43,6 @@
     "BACK_NO": "No",
     "DELETE_IMAGE": "Do you want delete this image?",
     "CHANGES_WILL_BE_LOST": "Close creation? All changes will be lost.",
-    "FORM_RECOGNITION": "Scan Reciped (Beta)"
+    "FORM_RECOGNITION": "Scan Reciped (Beta)",
+    "SEARCH_BOX": "Search"
 }

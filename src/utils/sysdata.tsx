@@ -29,6 +29,12 @@ export interface CardSection {
   data: Card[];
 }
 
+export interface CategoryType {
+  categoryid: string;
+  description: string;
+}
+
+
 export const CATEGORY_DEFAULT = "{EDCA3EA3-5064-407D-9099-B0CAEEA385DE}";
 
 class SysData {
@@ -68,13 +74,16 @@ class SysData {
                                   "    LEFT OUTER JOIN CATEGORIES CT ON (C.CATEGORYID=CT.CATEGORYID)	" +
                                  " ORDER BY CT.DESCRIPTION,C.DESCRIPTION";
 
-    private SQL_UPDATE_CARD = "UPDATE CARDS SET DESCRIPTION=?,URL=?,USERNAME=?,PASSWORD=?,NOTE=? " +
+    private SQL_UPDATE_CARD = "UPDATE CARDS SET DESCRIPTION=?,URL=?,USERNAME=?,PASSWORD=?,NOTE=?,CATEGORYID=? " +
                               "  WHERE CARDID=?";
 
     private SQL_INSERT_CARD = "INSERT INTO CARDS (CARDID,CATEGORYID,DESCRIPTION,URL,USERNAME,PASSWORD,NOTE) " +
                               " VALUES (?,?,?,?,?,?,?) ";
    
     private SQL_DELETE_CARD =  "DELETE FROM CARDS WHERE CARDID=?";
+
+    private SQl_CATEGORIES = "SELECT CATEGORYID,DESCRIPTION FROM CATEGORIES " +
+                             " ORDER BY DESCRIPTION"; 
                                
     constructor(databasename: string)
     {
@@ -202,7 +211,11 @@ class SysData {
     
     await this.db.transaction((resultset) => {
       resultset.executeSql(this.SQL_UPDATE_CARD,
-                           [card.description, card.url, card.username, card.password, card.note, card.cardid],(resultset, results) => {
+                           [card.description, card.url, 
+                            card.username, card.password, 
+                            card.note, 
+                            card.categoryid,
+                            card.cardid],(resultset, results) => {
           console.debug('Results', results.rowsAffected);
           if (results.rowsAffected > 0) {
             success = true;
@@ -260,6 +273,30 @@ class SysData {
    
     return success;
   }
+
+  getCategoryTypes(): CategoryType[]  {
+    return new Promise<CardSection[]>((resolve, reject) => {
+      this.db.executeSql(this.SQl_CATEGORIES,[])
+          .then(([resultset]) => {
+              let result: CategoryType[] =[];
+
+              for (let i = 0; i < resultset.rows.length; i++) {
+                const categoryFields = {categoryid, description} = resultset.rows.item(i);
+
+                result.push({categoryid: categoryFields.CATEGORYID, description: categoryFields.DESCRIPTION});
+              }
+              
+              return result;
+          })
+          .then(result => {
+             resolve(result);
+           })
+          .catch(error => {
+              console.error('error', error);
+              reject(error);
+          });
+  });
+}
 }
 
 export default SysData;

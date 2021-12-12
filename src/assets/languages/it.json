@@ -43,5 +43,6 @@
     "BACK_NO": "No",
     "DELETE_IMAGE": "Vuoi cancellare la imagine?",
     "CHANGES_WILL_BE_LOST": "Cancellare la creazione? Tutti i dati vengono persi.",
-    "FORM_RECOGNITION": "Scansione scontrino (Beta)"
+    "FORM_RECOGNITION": "Scansione scontrino (Beta)",
+    "SEARCH_BOX": "Ricerca"
 }

@@ -42,5 +42,6 @@
 	"BACK_NO": "Nein",
 	"DELETE_IMAGE": "Soll dieses Bild gelöscht werden?",
 	"CHANGES_WILL_BE_LOST": "Eingabe abbrechen? Alle Änderungen gehen verloren.",
-	"FORM_RECOGNITION": "Kassabeleg scannen (Beta)"
+	"FORM_RECOGNITION": "Kassabeleg scannen (Beta)",
+	"SEARCH_BOX": "Suche"
 }

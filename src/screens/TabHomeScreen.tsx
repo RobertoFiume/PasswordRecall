@@ -133,7 +133,10 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
 
       <Text>{searchText}</Text>
 
-      <SearchBox onChangeText = { (text: string) => { setSearchText(text); } } />
+      <SearchBox 
+        placeholder = {lang.SEARCH_BOX}
+        onChangeText = { (text: string) => { setSearchText(text); } } 
+      />
         
       <SectionList
         style = {{ padding: 8 }}
