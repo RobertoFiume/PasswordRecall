@@ -168,14 +168,6 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
 
             <Separator />
 
-            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text>{lang.SETTINGS_MANDANT}</Text>
-              {/* <PickerCompanies /> */}
-              <PickerCompaniesV2 />
-            </View>
-
-            <Separator />
-
             <LogoutButton logoutNavigation={() => {
               AsyncStorage.removeItem('selectedCompany');
               props.navigation.replace('Login')

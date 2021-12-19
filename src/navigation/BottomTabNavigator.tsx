@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
 import TabHomeScreen from '../screens/TabHomeScreen';
-import TabArchiveScreen from '../screens/TabArchiveScreen';
 import { Layout, ThemeContext } from '@infominds/react-native-components';
 import { Colors } from '../constants/Colors';
 
@@ -46,14 +45,6 @@ export default function BottomTabNavigator(props: { navigation: any }) {
         })}
       />
 
-      <BottomTab.Screen
-        name='Archive'
-        component={TabArchiveNavigator}
-        options={{
-          title: '',
-          tabBarIcon: ({ color }: any) => <TabBarIcon name="archive" color={color} />
-        }}
-      />
     </ BottomTab.Navigator>
   );
 }
