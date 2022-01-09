@@ -36,12 +36,14 @@ export interface CategoryType {
 
 
 export const CATEGORY_DEFAULT = "{EDCA3EA3-5064-407D-9099-B0CAEEA385DE}";
+export const DATABASE_NAME: String = 'PasswordRecall.db';
 
 class SysData {
     private dabaseName: string = "";
     private db: SQLiteDatabase;
 
     private ENCRYPT_KEY: string = "{B05B6A3B-AA72-44D7-B2DE-35EFC7B9443E}";
+
     private SQL_CREATE_USERS: string = "CREATE TABLE IF NOT EXISTS USERS" +
                                         "( " +
                                         "  USERID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
@@ -88,6 +90,7 @@ class SysData {
     constructor(databasename: string)
     {
       this.dabaseName = databasename;
+
       this.db = null;
       console.debug("database name: " + this.dabaseName);
     }
@@ -98,7 +101,7 @@ class SysData {
 
       console.debug('Open database ...');
       // wait to open database
-      await SQLite.openDatabase({name: this.dabaseName, key: this.ENCRYPT_KEY, createFromLocation: 1})
+      await SQLite.openDatabase({name: this.dabaseName, key: this.ENCRYPT_KEY, createFromLocation: 1, location: 'Documents'})
           .then((DBConnection) => {
           this.db = DBConnection;
         // console.log('Database info',this.db); 
@@ -295,8 +298,9 @@ class SysData {
               console.error('error', error);
               reject(error);
           });
-  });
-}
+    });
+  }
+   
 }
 
 export default SysData;

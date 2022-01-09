@@ -12,7 +12,7 @@ import { useCallback, useState } from 'react';
 import LoadingSpinnerModal from '../components/LoadingSpinnerModal'
 import SearchInputModal from '../components/SearchInputModal'
 import PasswordInput from '../components/PasswordInput'
-import SysData, {Card,CategoryType,CATEGORY_DEFAULT} from '../utils/sysdata';
+import SysData, {Card,CategoryType,CATEGORY_DEFAULT,DATABASE_NAME} from '../utils/sysdata';
 import createGuid from "react-native-create-guid";
 
 
@@ -43,7 +43,7 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
     const readOnly = props.route?.params?.readOnly as boolean | false;
 
     function setPasswordCardoModify() {
-        let db: SysData = new SysData("prova2.db");
+        let db: SysData = new SysData(DATABASE_NAME);
 
         db.openDatabse().then((result: boolean) => {
             console.debug('Opened database:',result); 
@@ -125,7 +125,7 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
             card.categoryid = CATEGORY_DEFAULT;
         }
 
-        const db: SysData = new SysData("prova2.db");
+        const db: SysData = new SysData(DATABASE_NAME);
 
         await db.openDatabse().then((result: boolean) => {
            console.debug('Opened database:',result); 
@@ -158,7 +158,7 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
 
     async function onDelete(cardid: string)
     {
-        const db: SysData = new SysData("prova2.db");
+        const db: SysData = new SysData(DATABASE_NAME);
 
         await db.openDatabse().then((result: boolean) => {
            console.debug('Opened database:',result); 

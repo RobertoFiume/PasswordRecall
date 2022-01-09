@@ -3,21 +3,22 @@ import React, { useContext, useEffect, useState } from 'react';
 import { DevSettings, Platform, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import {
   Colors, SwitchDarkMode, Text, Button,
-  ChangeThemeContext, ThemeContext, ChangeLanguageContext, LanguageContext
+  ChangeThemeContext, ThemeContext, ChangeLanguageContext, LanguageContext, Title
 } from '@infominds/react-native-components'
 import { getLanguageJSON } from '../utils/LanguageUtils'
 import Separator from '../components/Separator'
 import { LicenseGlobals, LogoutButton } from '@infominds/react-native-license'
-import useApi from '../apis/useApi';
-import createPersistedState from 'use-persisted-state';
 import DeviceInfo from 'react-native-device-info';
 import devEnviroments from '../devEnviroments';
-import { Company } from '../types';
 import PickerModal from '../components/PickerModal'
+import Share from 'react-native-share';
+import SysData, {DATABASE_NAME } from '../utils/sysdata';
+import RNFS from 'react-native-fs';
+import Moment from 'moment';
+import DocumentPicker, {DirectoryPickerResponse,DocumentPickerResponse,types} from 'react-native-document-picker'
+
 
 const packageJson = require('../../package.json');
-
-const useCounterState = createPersistedState('mandantID');
 
 export default function Settings(props: { navigation: any, onSettingsChange: () => void, isSettingsOpen: boolean }) {
   const lang: any = useContext(LanguageContext);
@@ -29,28 +30,13 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
 
   const [isEnabled, setIsEnabled] = useState(isDarkMode);
   const [selectedLanguage, setSelectedLanguage] = useState(lang.ID);
-  const [selectedCompany, setSelectedCompany] = useCounterState<Company | undefined>(undefined);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const [companies, setCompanies] = useState<Company[]>([]);
-
-  console.debug(companies);
-
   useEffect(() => {
     setIsEnabled(isDarkMode)
 
-    useApi.getCompaniesOfUser().then((res: Company[]) => {
-      setCompanies(res);
-      if (selectedCompany === undefined && res.length > 0)
-        setSelectedCompany(res[0])
-    }).catch(console.error)
-      .finally(() =>
-        AsyncStorage.getItem('selectedCompany').then(res => { if (res) setSelectedCompany(JSON.parse(res)); })
-      );
-
-    AsyncStorage.getItem('selectedCompany').then(res => { if (res) setSelectedCompany(JSON.parse(res)); });
     AsyncStorage.getItem('lang').then(res => { if (res) setSelectedLanguage(res) });
     AsyncStorage.getItem('username').then((res: any) => setUsername(res));
     AsyncStorage.getItem('password').then((res: any) => setPassword(res));
@@ -72,17 +58,6 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
     }
   }
 
-  function getNewToken(company?: string, langstr?: string) {
-    const useCompany = company ?? selectedCompany?.id;
-    const useLang = langstr ?? selectedLanguage;
-
-    useApi.login(username, password ?? '', useLang, useCompany).then(token => {
-      LicenseGlobals.token = token;
-      props.onSettingsChange();
-    }).catch(err => console.error(err));
-  }
-
-
   const PickerLanguageV2 = () => {
     const languages = [
       { label: 'Deutsch', value: 'de' },
@@ -98,7 +73,6 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
               setLanguage(getLanguageJSON(language.value));
               setSelectedLanguage(language.value);
               AsyncStorage.setItem('lang', language.value);
-              getNewToken(undefined, language.value);
             }
           }}
           renderSelected={(item: any) => item?.label}
@@ -108,26 +82,98 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
     )
   }
 
-  const PickerCompaniesV2 = () => (
-    <View style={{ flex: 1 }}>
-      <PickerModal
-        value={selectedCompany}
-        onSelect={(value: Company) => {
-          if (value) {
-            setSelectedCompany(value);
-            LicenseGlobals.mandantId = value.id;
-            AsyncStorage.setItem('code', value.id);
-            AsyncStorage.setItem('selectedCompany', JSON.stringify(value));
+  async function backupDatabase(fileName: String): boolean {
+    let success: boolean = false;
+  
+    const databaseFile = RNFS.DocumentDirectoryPath + '/' + DATABASE_NAME;
+    console.debug('Backup database');
+  
+    await RNFS.copyFile(databaseFile, fileName)
+        .then((result: boolean) => {
+          success = result;
+          console.debug('File copied');
+        })
+        .catch((error) => {
+          success = false;
+          throw new Error("Error on copy file: " + error.message); //raise error
+        });
+   
+    return success;
+  }
 
-            console.log(value)
-            getNewToken(value.id);
-          }
-        }}
-        renderSelected={(item: Company) => item?.description}
-        renderItemContent={({ item }: { item: Company }) => <Text>{item.description}</Text>}
-        data={companies} />
-    </View >
-  )
+
+  async function shareToFiles(fileName: String): boolean {
+     let success: boolean = false;
+
+     const shareOptions = {
+        title: 'Share file',
+        failOnCancel: false,
+        saveToFiles: true,
+        urls: [fileName],
+      };
+
+      try {
+        await Share.open(shareOptions);
+        success = true;
+      }  
+      catch (error) {
+        success = false
+      }
+
+      return success;
+  };
+
+  const OnBackupDataClick = () => {
+    let backupFile = RNFS.DocumentDirectoryPath + '/Backup ' + Moment(new Date).format('YYYY.MM.DD HH.mm.ss') + '.rpbk';
+    
+    backupDatabase(backupFile)
+      .then((result: boolean) => {
+        shareToFiles(backupFile)
+          .then((result: boolean) => {
+             console.debug("Shared file");
+            
+            RNFS.unlink(backupFile);
+          });
+      })
+      .catch((error) => {
+        success = false
+        console.error("Error: ", error);
+
+        throw new Error(error); //raise error
+      });
+  }
+
+  const OnRestoreDataClick = async () => {
+    
+    try {
+      const fileSelected = await DocumentPicker.pickSingle({
+        presentationStyle: 'fullScreen',
+        copyTo: 'cachesDirectory'
+      });
+
+      const deleteDabaseFile = RNFS.DocumentDirectoryPath + '/' + DATABASE_NAME;
+      await RNFS.unlink(deleteDabaseFile);
+
+      const deleteDatabaseShm = RNFS.DocumentDirectoryPath + '/PasswordRecall.db-shm';
+      await RNFS.unlink(deleteDatabaseShm);
+
+      const deleteDatabaseWal = RNFS.DocumentDirectoryPath + '/PasswordRecall.db-wal';
+      await RNFS.unlink(deleteDatabaseWal);
+
+      console.debug("File picker: ", fileSelected);
+      const databaseFile = RNFS.DocumentDirectoryPath + '/' + DATABASE_NAME;
+
+      const decodedFileURI = decodeURIComponent(fileSelected.fileCopyUri); // Necessaria se ci sono spazi nel nome del file
+      await RNFS.copyFile(decodedFileURI,databaseFile);
+
+      //TODO: fare il refresh dell'app per caricare il nuovo db
+    } 
+    catch (error) {
+      console.error("Error: ", error);
+    }
+
+  }
+
 
   return (
     <View style={{ margin: 0 }} >
@@ -169,9 +215,21 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
             <Separator />
 
             <LogoutButton logoutNavigation={() => {
-              AsyncStorage.removeItem('selectedCompany');
+             // AsyncStorage.removeItem('selectedCompany');
               props.navigation.replace('Login')
             }} />
+
+           <Button 
+             style = {styles.buttonBackupAndRestore}
+             title = "Backup"
+             onPress = {() => OnBackupDataClick()}
+           />
+
+           <Button 
+             style = {styles.buttonBackupAndRestore}
+             title = "Restore"
+             onPress = {() => OnRestoreDataClick()}
+           />
 
             <Text style={{ marginBottom: 20 }}>Info</Text>
 
@@ -188,11 +246,6 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={styles.info}>{lang.SETTINGS_LICENSE}: </Text>
               <Text style={styles.info}>{LicenseGlobals.license}</Text>
-            </View>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={styles.info}>{lang.SETTINGS_SERVER}: </Text>
-              <Text style={styles.infoDetail}>{LicenseGlobals.baseUrl}</Text>
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -217,5 +270,9 @@ const styles = StyleSheet.create({
     flex: 1,
     flexWrap: 'wrap',
     textAlign: 'right'
+  },
+  buttonBackupAndRestore:
+  {
+    backgroundColor: "#00A1FE",
   }
 });

@@ -8,7 +8,7 @@ import 'moment/locale/it'
 import 'moment/locale/de'
 import { groupByDate } from '../utils/Filters';
 import LoadingSpinnerModal from '../components/LoadingSpinnerModal'
-import SysData, { Card } from '../utils/sysdata';
+import SysData, { Card, DATABASE_NAME } from '../utils/sysdata';
 import PasswordCard from '../utils/PasswordCard';
 import { RESULTS } from 'react-native-permissions';
 
@@ -30,7 +30,7 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
 
 
   function reload() {
-    let db: SysData = new SysData("prova2.db");
+    let db: SysData = new SysData(DATABASE_NAME);
 
      db.openDatabse().then((result: boolean) => {
         setLoading(true);  
