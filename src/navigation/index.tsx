@@ -4,10 +4,10 @@ import * as React from 'react';
 
 import BottomTabNavigator from './BottomTabNavigator';
 import { ColorSchemeName } from 'react-native';
-import { LoginScreen } from '@infominds/react-native-license';
 import NewPasswordCardScreen from '../screens/NewPasswordCard';
-import useApi from '../apis/useApi';
-import DemoMode from '../constants/DemoMode';
+
+//import { LoginScreen } from '@infominds/react-native-license';
+import LoginView from '../screens/Login/LoginView';
 
 export default function Navigation(props: { colorScheme: ColorSchemeName }) {
   return (
@@ -21,18 +21,15 @@ const Stack = createStackNavigator();
 function RootNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="Root"
+     // initialRouteName="Root"
+     initialRouteName="Login"
       screenOptions={{ headerShown: false }}
     >
       <Stack.Screen name="Login">
         {props =>
-          <LoginScreen {...props}
+          <LoginView {...props}
             //customLoginFunction={useApi.login}
-            projectCode={'APP-RXEXP'}
-            modulCode={'APP'}
-            demoData={{ lic: DemoMode.DEMO_LICENSE_KEY, username: DemoMode.DEMO_USERNAME, password: DemoMode.DEMO_PASSWORD }}
-            isOffline={false}
-            getMandants={false}
+           
             getUserInfo={false}
             iconSource={require('../assets/img/icon.png')} />
         }

@@ -9,9 +9,9 @@ import { TouchableOpacity, ScrollView, View, StyleSheet, Platform, Alert } from 
 import { useFocusEffect } from '@react-navigation/core';
 import Label from '../components/Label';
 import { useCallback, useState } from 'react';
-import LoadingSpinnerModal from '../components/LoadingSpinnerModal'
-import SearchInputModal from '../components/SearchInputModal'
-import PasswordInput from '../components/PasswordInput'
+import LoadingSpinnerModal from '../components/LoadingSpinnerModal';
+import SearchInputModal from '../components/SearchInputModal';
+import PasswordInput from '../components/PasswordInput';
 import SysData, {Card,CategoryType,CATEGORY_DEFAULT,DATABASE_NAME} from '../utils/sysdata';
 import createGuid from "react-native-create-guid";
 
