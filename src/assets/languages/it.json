@@ -44,5 +44,8 @@
     "DELETE_IMAGE": "Vuoi cancellare la imagine?",
     "CHANGES_WILL_BE_LOST": "Cancellare la creazione? Tutti i dati vengono persi.",
     "FORM_RECOGNITION": "Scansione scontrino (Beta)",
-    "SEARCH_BOX": "Ricerca"
+    "SEARCH_BOX": "Ricerca",
+    "REGISTRATION": "Registrazione",
+    "INVALID_USER": "Utente e/o password errata"
+
 }

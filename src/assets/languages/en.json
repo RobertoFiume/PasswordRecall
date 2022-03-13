@@ -44,5 +44,8 @@
     "DELETE_IMAGE": "Do you want delete this image?",
     "CHANGES_WILL_BE_LOST": "Close creation? All changes will be lost.",
     "FORM_RECOGNITION": "Scan Reciped (Beta)",
-    "SEARCH_BOX": "Search"
+    "SEARCH_BOX": "Search",
+    "REGISTRATION": "Registration",
+    "INVALID_USER": "User or password not valid"
+
 }

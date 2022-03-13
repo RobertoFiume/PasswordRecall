@@ -48,7 +48,7 @@ class SysData {
                                         "( " +
                                         "  USERID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
                                         "  USERNAME VARCHAR(50) NOT NULL COLLATE NOCASE, " +
-                                        "  PASSWORD VARCHAR(50) " +
+                                        "  PASSWORD VARCHAR(50) NOT NULL " +
                                         ");";
 
     private SQL_CREATE_CARDS: string = "CREATE TABLE IF NOT EXISTS CARDS ( " +
@@ -86,6 +86,9 @@ class SysData {
 
     private SQl_CATEGORIES = "SELECT CATEGORYID,DESCRIPTION FROM CATEGORIES " +
                              " ORDER BY DESCRIPTION"; 
+
+    private SQL_USER = "SELECT USERNAME FROM USERS WHERE USERNAME=? AND PASSWORD=?";
+    private SQL_INSERT_USER = "INSERT INTO USERS (USERNAME,PASSWORD) VALUES (?,?) ";
                                
     constructor(databasename: string)
     {
@@ -301,6 +304,42 @@ class SysData {
     });
   }
    
+  async existsUser(username: string, password: string): boolean {
+    let success: boolean = false;
+
+    await this.db.executeSql(this.SQL_USER,[username,password])
+        .then(([resultset]) => {
+          console.debug('Search from: ', username,password);
+          
+          success = (resultset.rows.length >= 1);
+        })
+        .catch(error => {
+            console.error('error', error);
+        });
+
+    return success;
+  }
+
+  async insertUser(username: string, password: string): boolean {
+    let success: boolean = false;
+  
+    console.debug("user:",username,password);
+    await this.db.transaction((resultset) => {
+      resultset.executeSql(this.SQL_INSERT_USER,[username,password],(resultset, results) => {
+          console.debug('Results', results.rowsAffected);
+          if (results.rowsAffected > 0) {
+            success = true;
+            console.debug('Insert user ok');
+          } 
+          else {
+            console.debug('Insert user Failed');
+          }
+        }
+      );
+    });
+   
+    return success;
+  }
 }
 
 export default SysData;

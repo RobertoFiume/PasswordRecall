@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity,Image } from 'react-native';
+import { SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity,Image , Alert} from 'react-native';
 import AsyncStorage from "@react-native-community/async-storage"
-import { Screen, Colors, Button, Input,  LoadingIndicator, Text, View, Layout, Icon } from '@infominds/react-native-components';
+import { Screen, Colors, Button, Input,  LoadingIndicator, Text, View, Layout, Icon, LanguageContext} from '@infominds/react-native-components';
 import { useColorScheme } from '@infominds/react-native-components';
 
 import PasswordInput from '../../components/PasswordInput';
+import SysData, {DATABASE_NAME} from '../../utils/sysdata';
 
 
 Login.defaultProps = {
@@ -21,6 +22,7 @@ export default function Login(props: {
   
   getUserInfo?: boolean
 }) {
+  const lang = React.useContext(LanguageContext);
   const [isLoading, setLoading] = useState(true);
 
   const [username, setUsername] = useState('');
@@ -55,6 +57,50 @@ export default function Login(props: {
     setUsernameError(false);
   }
 
+  async function ExistsUser(username: string, password: string): boolean
+  {
+    let success: boolean = false;
+    const db: SysData = new SysData(DATABASE_NAME);
+
+    await db.openDatabse().then((result: boolean) => {
+      console.debug('Opened database:',result); 
+    
+      success = db.existsUser(username,password)
+          .then((result: boolean)  => {
+              return result; 
+          }).catch((error) => {
+              console.error("Error: ",error);
+          });
+      })
+      .catch((error) => {
+          console.error("Error on open database",error);
+      });
+    return success;
+  }
+
+  async function AddNewUser(username: string, password: string): boolean
+  {
+    let success: boolean = false;
+    const db: SysData = new SysData(DATABASE_NAME);
+
+    await db.openDatabse().then((result: boolean) => {
+      console.debug('Opened database:',result); 
+      
+      success = db.insertUser(username,password)
+          .then((result: boolean)  => {
+              return result; 
+          }).catch((error) => {
+              console.error("Error: ",error);
+          });
+      })
+      .catch((error) => {
+          console.error("Error on open database",error);
+      });
+
+    return success;
+  }
+
+
   let onLoginButtonPress = () => {
     resetErrors();
     setLoading(true);
@@ -62,11 +108,58 @@ export default function Login(props: {
     username ? AsyncStorage.setItem('username', username) : setUsernameError(true);
     AsyncStorage.setItem('password', password);
 
-    if (username) {
-     
-      setLoading(false);
-    }
+    ExistsUser(username,password)
+      .then((result: boolean) => {
+          if (result)
+              props.navigation.navigate('Root');
+          else {
+            Alert.alert(lang.INVALID_USER, '', [
+              {
+                  text: "OK", onPress: () => {
+                      
+                  }
+              }
+            ]);
+          }
+      })
+      .catch((error) => {
+          console.error(error);
+      })
+      .finally(() => {
+        setLoading(false);
+      })
   }
+
+  let onAddNewUserButtonPress = () => {
+    resetErrors();
+    setLoading(true);
+
+    username ? AsyncStorage.setItem('username', username) : setUsernameError(true);
+    AsyncStorage.setItem('password', password);
+
+    AddNewUser(username,password)
+      .then((result: boolean) => {
+        
+          if (result)
+             props.navigation.navigate('Root');
+          else {
+            Alert.alert(lang.INVALID_USER, '', [
+              {
+                  text: "OK", onPress: () => {
+                      
+                  }
+              }
+            ]); 
+          }
+      })
+      .catch((error) => {
+          console.error(error);
+      })
+      .finally(() => {
+        setLoading(false);
+      })
+  }
+
 
   const ScreenIcon = () => {
     let source = props.iconSource;
@@ -78,7 +171,7 @@ export default function Login(props: {
     }
 
     let len = Layout.isSmallDevice ? 133 : 200
-len=200;
+
     return (<Image
       style={[{ width: len, height: len, margin: 50, marginTop: 5 }, props?.iconStyle]}
       source={source} />)
@@ -108,7 +201,7 @@ len=200;
               <ScreenIcon></ScreenIcon>
               
               <Input
-                placeholder='{language.USERNAME}'
+                placeholder={lang.USERNAME}
                 style={[styles.input, {
                   color: theme.text,
                   backgroundColor: theme.inputBackground,
@@ -118,7 +211,7 @@ len=200;
                 value={username}></Input>
 
               <PasswordInput
-                placeholder='{language.PASSWORD}'
+                placeholder={lang.PASSWORD}
                 style={[styles.input, {
                   color: theme.text,
                   backgroundColor: theme.inputBackground,
@@ -132,13 +225,11 @@ len=200;
                 style={styles.loginButton}
                 title="Login"
                 onPress={onLoginButtonPress} />
-
-
               
               <Button
                 style={styles.loginButton}
-                title={'Demo'}
-                  //onPress={onDemoLogin} 
+                title={lang.REGISTRATION}
+                onPress={onAddNewUserButtonPress} 
               />
                    
           </View>
