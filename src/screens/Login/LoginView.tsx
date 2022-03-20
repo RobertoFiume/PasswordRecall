@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity,Image , Alert} from 'react-native';
+import { SafeAreaView, ScrollView, StatusBar, StyleSheet, Image , Alert} from 'react-native';
 import AsyncStorage from "@react-native-community/async-storage"
-import { Screen, Colors, Button, Input,  LoadingIndicator, Text, View, Layout, Icon, LanguageContext} from '@infominds/react-native-components';
+import { Colors, Button, Input,  LoadingIndicator, Text, View, Layout, Icon, LanguageContext} from '@infominds/react-native-components';
 import { useColorScheme } from '@infominds/react-native-components';
 
 import PasswordInput from '../../components/PasswordInput';
-import SysData, {DATABASE_NAME} from '../../utils/sysdata';
+import SysData, {DATABASE_NAME} from "../../utils/sysdata";
+import ReactNativeBiometrics   from 'react-native-biometrics';
 
 
 Login.defaultProps = {
@@ -30,28 +31,35 @@ export default function Login(props: {
   const [usernameError, setUsernameError] = useState(false);
 
   const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme]
+  const theme = Colors[colorScheme];
 
   useEffect(() => {
     resetErrors();
-    AsyncStorage.multiGet(['licenseKey', 'username', 'password']).then((val: any) => {
-      if (val.length !== 3) {
+
+    AsyncStorage.multiGet(['username', 'password']).then((val: any) => {
+      console.debug('get data: ', val);
+      if (val.length !== 2) {
         setLoading(false);
         return;
       }
-      let lic = val[0][1], user = val[1][1], pass = val[2][1];
-      console.debug(lic, user, pass);
-      if (lic && user) {
+
+      let user = val[0][1], pass = val[1][1];
+      console.debug("last user: ", user, pass);
+
+      if (user) 
+      {
         setUsername(user);
         setPassword(pass);
 
         setLoading(false);
-      } else {
+
+        requestAuthentication();
+      } 
+      else {
         setLoading(false)
       }
-
     }).catch(() => { setLoading(false) });
-  }, [])
+  }, []);
 
   let resetErrors = () => {
     setUsernameError(false);
@@ -101,17 +109,80 @@ export default function Login(props: {
   }
 
 
+  function requestAuthenticationExt(): void
+  {
+    let epochTimeSeconds = Math.round((new Date()).getTime() / 1000).toString()
+    let payload = epochTimeSeconds + 'some message'
+
+    ReactNativeBiometrics.createSignature({
+        promptMessage: 'Sign in',
+        payload: payload
+      })
+      .then((resultObject) => {
+        const { success, signature } = resultObject
+
+        if (success) {
+          console.debug('Biometric ok');
+          //verifySignatureWithServer(signature, payload)
+        }
+      })
+  }
+
+  async function requestAuthentication(): void 
+  {
+    console.debug('Request biometrics');
+    let success: boolean = false;
+
+    const {available,biometryType} = await ReactNativeBiometrics.isSensorAvailable();
+
+    if (available && biometryType === ReactNativeBiometrics.TouchID) {
+      console.debug('TouchID is supported');
+      success = true;
+    } 
+    else if (available && biometryType === ReactNativeBiometrics.FaceID) {
+      console.debug('FaceID is supported');
+      success = true;
+    } 
+    else if (available && biometryType === ReactNativeBiometrics.Biometrics) {
+      console.debug('Biometrics is supported');
+      success = true;
+    } 
+    else {
+      console.debug('Biometrics not supported');
+      success = false;
+    }
+
+    if (success) {
+      ReactNativeBiometrics.simplePrompt({promptMessage: 'Confirm fingerprint'})
+        .then((resultObject) => {
+          const { success } = resultObject
+
+          if (success) {
+            console.debug('successful biometrics provided');
+            props.navigation.navigate('Root');
+          } 
+          else {
+            console.debug('user cancelled biometric prompt')
+          }
+        })
+        .catch(() => {
+          console.debug('biometrics failed')
+        });
+    }
+  }
+
   let onLoginButtonPress = () => {
     resetErrors();
     setLoading(true);
 
-    username ? AsyncStorage.setItem('username', username) : setUsernameError(true);
-    AsyncStorage.setItem('password', password);
-
     ExistsUser(username,password)
       .then((result: boolean) => {
           if (result)
-              props.navigation.navigate('Root');
+          {
+            updateLoginData(username,password);
+
+            props.navigation.navigate('Root');
+          }
           else {
             Alert.alert(lang.INVALID_USER, '', [
               {
@@ -130,6 +201,18 @@ export default function Login(props: {
       })
   }
 
+  function updateLoginData(username: string, password: string): void
+  {
+    setUsername(username);
+    setPassword(password);
+
+    AsyncStorage.setItem('username', username);
+    AsyncStorage.setItem('password', password);
+
+    console.debug('login: ' ,username,password);
+  }
+  
+  
   let onAddNewUserButtonPress = () => {
     resetErrors();
     setLoading(true);
@@ -141,7 +224,10 @@ export default function Login(props: {
       .then((result: boolean) => {
         
           if (result)
-             props.navigation.navigate('Root');
+          {
+            updateLoginData(username,password);
+            props.navigation.navigate('Root');
+          }
           else {
             Alert.alert(lang.INVALID_USER, '', [
               {
@@ -194,12 +280,10 @@ export default function Login(props: {
     />
     <View style={{ flex: 1, justifyContent: 'space-between', backgroundColor: Colors[colorScheme].background }}>
       <ScrollView contentContainerStyle={{ flex: 1, justifyContent: 'center' }} keyboardShouldPersistTaps='handled'>
-        
         <View style={[styles.container, { marginTop: -65, left: 0, right: 0, backgroundColor: Colors[colorScheme].background }]} >
           <View style={[{ backgroundColor: Colors[colorScheme].background }, styles.login]}>
-        
-              <ScreenIcon></ScreenIcon>
-              
+
+              <ScreenIcon></ScreenIcon>         
               <Input
                 placeholder={lang.USERNAME}
                 style={[styles.input, {
