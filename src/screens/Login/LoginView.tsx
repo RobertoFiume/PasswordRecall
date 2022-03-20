@@ -152,23 +152,25 @@ export default function Login(props: {
       success = false;
     }
 
-    if (success) {
-      ReactNativeBiometrics.simplePrompt({promptMessage: 'Confirm fingerprint'})
-        .then((resultObject) => {
-          const { success } = resultObject
+    if (!success) 
+      return;
 
-          if (success) {
-            console.debug('successful biometrics provided');
-            props.navigation.navigate('Root');
-          } 
-          else {
-            console.debug('user cancelled biometric prompt')
-          }
-        })
-        .catch(() => {
-          console.debug('biometrics failed')
-        });
-    }
+    ReactNativeBiometrics.simplePrompt({promptMessage: 'Confirm fingerprint'})
+      .then((resultObject) => {
+        const { success } = resultObject
+
+        if (success) {
+          console.debug('successful biometrics provided');
+          props.navigation.navigate('Root');
+        } 
+        else {
+          console.debug('user cancelled biometric prompt')
+        }
+      })
+      .catch(() => {
+        console.debug('biometrics failed')
+      });
+
   }
 
   let onLoginButtonPress = () => {
