@@ -42,21 +42,32 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
     const detail = props.route?.params?.detail as Card;
     const readOnly = props.route?.params?.readOnly as boolean | false;
 
-    function setPasswordCardoModify() {
+    async function loadCategories(): void{
         let db: SysData = new SysData(DATABASE_NAME);
 
-        db.openDatabse().then((result: boolean) => {
+        console.debug('Load card...');
+
+        await db.openDatabse().then((result: boolean) => {
             console.debug('Opened database:',result); 
+            
             db.getCategoryTypes()
-                .then((categoryTypes: CategoryType[])  => {
-                    setCategoryTypes(categoryTypes);
+                .then((listOfCategoryTypes: CategoryType[])  => {
+                    setCategoryTypes(listOfCategoryTypes);
+
+                    setCategoryType(listOfCategoryTypes?.find((category: CategoryType) => { return category.categoryid === detail.categoryid }));
                 }).catch((error) => {
                     console.error("Error on get categories",error);
                 });
         })
         .catch((error) => {
             console.error("Error on open database",error);
-        });
+        }); 
+
+        console.debug('Load card end');
+    }
+
+    function setPasswordCardoModify() {
+        console.debug('set password...');
 
         if (detail) { 
             setCategoryid(detail.categoryid);
@@ -80,16 +91,17 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
             setPinCode(null);
             setUrl(null);
         }
+
+        console.debug('set password');
     }
 
     React.useEffect(() => {
-        setPasswordCardoModify();  
+        loadCategories();
+        setPasswordCardoModify();
+
+        setCategoryType(categoryTypes?.find((category: CategoryType) => { return category.categoryid === detail.categoryid }));
     }, []);  
 
-
-    React.useEffect(() => {
-       
-    }, []);
 
     useFocusEffect(useCallback(() => {
 

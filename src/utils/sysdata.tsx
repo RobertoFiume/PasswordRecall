@@ -8,6 +8,7 @@
 import * as React from 'react';
 import SQLite, { SQLiteDatabase } from 'react-native-sqlite-storage';
 import createGuid from "react-native-create-guid";
+import { RESULTS } from 'react-native-permissions';
 
 SQLite.DEBUG(false);
 SQLite.enablePromise(true);
@@ -302,6 +303,24 @@ class SysData {
               reject(error);
           });
     });
+  }
+
+  async getCategoryTypes2(): CategoryType[]  {
+    let listOfCategories: CategoryType[] = [];
+
+     await this.db.executeSql(this.SQl_CATEGORIES,[])
+          .then(([resultset]) => {
+              for (let i = 0; i < resultset.rows.length; i++) {
+                const categoryFields = {categoryid, description} = resultset.rows.item(i);
+
+                listOfCategories.push({categoryid: categoryFields.CATEGORYID, description: categoryFields.DESCRIPTION});
+              }
+          })
+          .catch(error => {
+              console.error('error', error);
+          });
+
+    return listOfCategories;
   }
    
   async existsUser(username: string, password: string): boolean {
