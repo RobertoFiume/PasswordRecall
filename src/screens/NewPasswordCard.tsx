@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {
     Screen, Text, Colors, Icon, LanguageContext, ThemeContext, Title,
-    Input, Button, Note, Layout, ImValidators, LoadingIndicator, ButtonType
+    Input, Button, Note,ButtonType
 } from '@infominds/react-native-components';
 import 'moment/locale/it'
 import 'moment/locale/de'
-import { TouchableOpacity, ScrollView, View, StyleSheet, Platform, Alert } from 'react-native';
+import { TouchableOpacity, ScrollView, View, StyleSheet, Platform, Alert, KeyboardAvoidingView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/core';
 import Label from '../components/Label';
 import { useCallback, useState } from 'react';
@@ -14,6 +14,7 @@ import SearchInputModal from '../components/SearchInputModal';
 import PasswordInput from '../components/PasswordInput';
 import SysData, {Card,CategoryType,CATEGORY_DEFAULT,DATABASE_NAME} from '../utils/sysdata';
 import createGuid from "react-native-create-guid";
+import { TextInput } from 'react-native-gesture-handler';
 
 
 String.prototype.replaceAll = function (search: any, replacement: any) {
@@ -27,7 +28,7 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
 
     const [showErrors, setShowErrors] = useState(false);
     const [disableButton, setDisableButton] = useState(false);
-   
+
     const [categoryid, setCategoryid] = useState<string>();
     const [cardid, setCardid] = useState<string>();
     const [description, setDescription] = useState<string>();
@@ -42,32 +43,7 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
     const detail = props.route?.params?.detail as Card;
     const readOnly = props.route?.params?.readOnly as boolean | false;
 
-    async function loadCategories(): void{
-        let db: SysData = new SysData(DATABASE_NAME);
-
-        console.debug('Load card...');
-
-        await db.openDatabse().then((result: boolean) => {
-            console.debug('Opened database:',result); 
-            
-            db.getCategoryTypes()
-                .then((listOfCategoryTypes: CategoryType[])  => {
-                    setCategoryTypes(listOfCategoryTypes);
-
-                    setCategoryType(listOfCategoryTypes?.find((category: CategoryType) => { return category.categoryid === detail.categoryid }));
-                }).catch((error) => {
-                    console.error("Error on get categories",error);
-                });
-        })
-        .catch((error) => {
-            console.error("Error on open database",error);
-        }); 
-
-        console.debug('Load card end');
-    }
-
     function setPasswordCardoModify() {
-        console.debug('set password...');
 
         if (detail) { 
             setCategoryid(detail.categoryid);
@@ -82,17 +58,15 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
             setCategoryType(categoryTypes?.find((category: CategoryType) => { return category.categoryid === detail.categoryid }));
         }
         else {
-            setCategoryid(null);
-            setCardid(null);
-            setDescription(null);
-            setUserName(null);
-            setPassword (null);
-            setNote(null);
-            setPinCode(null);
-            setUrl(null);
+            setCategoryid('');
+            setCardid('');
+            setDescription('');
+            setUserName('');
+            setPassword('');
+            setNote('');
+            setPinCode('');
+            setUrl('');
         }
-
-        console.debug('set password');
     }
 
     React.useEffect(() => {
@@ -107,91 +81,102 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
 
     }, []));
 
-    async function onSave(isUpdate: boolean = false) {
-        console.debug("save");
-        console.info('call save',isUpdate);
+    async function loadCategories(): Promise<void> {
+        console.debug('Load categories start');
+        try
+        {
+            let db: SysData = new SysData(DATABASE_NAME);
+            let result: boolean = await db.openDatabase();
+            
+            if (result) {
+                try {
+                    let listOfCategoryTypes: CategoryType[] = await db.getCategoryTypes();  
+                    setCategoryTypes(listOfCategoryTypes);
 
+                    if (detail)
+                        setCategoryType(listOfCategoryTypes?.find((category: CategoryType) => { return category.categoryid === detail.categoryid }));
+                } catch (error) {
+                    console.error("Error on get categories",error);
+                }
+            }
+        }
+        finally
+        {
+            console.debug('Load categories end');
+        }
+    }
+  
+    async function onSave(isUpdate: boolean = false) {
         let success: boolean = false;
 
-        const card: Card = ({
-           "categoryid": categoryType?.categoryid,
-           "cardid":  cardid,
-           "description": description,
-           "url": url,
-           "username": username,
-           "password": password,
-           "note": note
-        });
-          
-        if (!isUpdate) {
-          if (card.cardid == null) {
-            await  createGuid()
-              .then((guid) => {
-                card.cardid = guid; 
+        console.debug("On save start");
+        try
+        {
+            console.info('call save',isUpdate);
 
-                console.debug('guid:',guid);
-              });
-          }
-        
-          if (card.categoryid === null)
-            card.categoryid = CATEGORY_DEFAULT;
+            const card = { 
+                categoryid: categoryType?.categoryid,
+                cardid:  cardid,
+                description: description,
+                url: url,
+                username: username,
+                password: password,
+                note: note
+            } as Card ;
+
+            
+            if (!isUpdate) 
+            {
+                if (card.cardid === null) 
+                    card.cardid = await createGuid();
+                
+                if (card.categoryid === null)
+                    card.categoryid = CATEGORY_DEFAULT;
+            }
+
+            let db: SysData = new SysData(DATABASE_NAME);
+            let result: boolean = await db.openDatabase();
+
+            if (result) {
+                try {
+                    if (isUpdate) 
+                        success = await db.updateCard(card);
+                    else
+                        success = await db.insertCard(card); 
+                } catch (error) {
+                    console.error("Error on get categories",error);
+                }
+            }
         }
-
-        const db: SysData = new SysData(DATABASE_NAME);
-
-        await db.openDatabse().then((result: boolean) => {
-           console.debug('Opened database:',result); 
-         
-           if (isUpdate) {
-              success = db.updateCard(card)
-                .then((result: boolean)  => {
-                    console.debug('Updated card',result);
-                    return result; 
-                }).catch((error) => {
-                    console.error("Error on update cards",error);
-                });
-            } 
-            else {
-              success = db.insertCard(card)
-                .then((result: boolean)  => {
-                    console.debug('Insert card',result);
-                    return result; 
-                }).catch((error) => {
-                    console.error("Error on insert cards",error);
-                });
-            } 
-         })
-         .catch((error) => {
-             console.error("Error on open database",error);
-         });
-     
-         return success;
+        finally
+        {
+            console.debug("On save end");
+        }
+        
+        return success;
     }
 
     async function onDelete(cardid: string)
     {
-        const db: SysData = new SysData(DATABASE_NAME);
+        console.debug("On delete start");
+        try
+        {
+            let db: SysData = new SysData(DATABASE_NAME);
+            let result: boolean = await db.openDatabase();
 
-        await db.openDatabse().then((result: boolean) => {
-           console.debug('Opened database:',result); 
-        
-           db.deleteCard(cardid)
-            .then((result: boolean)  => {
-                console.debug('Delete card',result);
-                return result; 
-            }).catch((error) => {
-                console.error("Error on delete cards",error);
-            });
-            
-         })
-         .catch((error) => {
-             console.error("Error on open database",error);
-         });
+            if (result) 
+                await db.deleteCard(cardid);
+        }
+        finally
+        {
+            console.debug("On delete end");
+        }
     }
 
     return (
         <Screen backgroundImage='ellipse8' style={{ padding: 0 }} scrollable={false}  >
             {/* <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "position" : undefined}> */}
+
             <ScrollView style={{ padding: 10 }}>
                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-start' }}>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-start' }}>
@@ -284,11 +269,13 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
                 />
 
                 <Label text = {lang.NOTE} />
-                <Note 
+                <Input
                     editable = {!readOnly}
-                    placeholder={''}
+                    placeholder = {''}
+                    multiline
+                    style = {{minHeight: 100}}
                     value = {note}
-                    onChangeText={(value: string) => {
+                    onChangeText = {(value: string) => {
                       setNote(value);
                     } } 
                 />
@@ -347,6 +334,7 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
 
             <LoadingSpinnerModal visible={disableButton} />
             {/* </KeyboardAvoidingView> */}
+     
         </Screen >
 
     )
@@ -354,4 +342,3 @@ export default function NewPasswordCardScreen(props: { navigation: any, route: a
     
 }
 
-  

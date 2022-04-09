@@ -46,7 +46,7 @@ export default function App() {
           <ThemeContext.Provider value={colorScheme}>
             <ChangeThemeContext.Provider value={setTheme}>
               <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "position" : "height"}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={styles.container} >
 
                 <View style={[styles.screen, { backgroundColor: theme.background }]}>

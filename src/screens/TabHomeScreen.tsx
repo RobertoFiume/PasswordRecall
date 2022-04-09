@@ -1,16 +1,17 @@
 import * as React from 'react';
-import { Screen, Icon, ThemeContext, Colors, View, Title, Text, LanguageContext, SectionList, SearchBox } from '@infominds/react-native-components';
+import { Screen, Icon, ThemeContext, Colors, View, Title, Text, LanguageContext, SectionList, SearchBox} from '@infominds/react-native-components';
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { TouchableOpacity } from 'react-native';
+import { KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet} from 'react-native';
 import SettingsModal from '../components/SettingsModal';
 import 'moment/locale/it'
 import 'moment/locale/de'
 import { groupByDate } from '../utils/Filters';
 import LoadingSpinnerModal from '../components/LoadingSpinnerModal'
-import SysData, { Card, DATABASE_NAME } from '../utils/sysdata';
+import SysData, { Card, CardSection, DATABASE_NAME } from '../utils/sysdata';
 import PasswordCard from '../utils/PasswordCard';
 import { RESULTS } from 'react-native-permissions';
+
 
 
 export default function TabHomeScreen(props: { navigation: any, route: any }) {
@@ -26,31 +27,31 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
 
   const [searchText, setSearchText] = useState<string>("");
 
-  <SearchBox></SearchBox>
+  async function reload() {
+    console.debug("Reload start");
 
+    setLoading(true);  
+    try
+    {
+      let db: SysData = new SysData(DATABASE_NAME);
 
-  function reload() {
-    let db: SysData = new SysData(DATABASE_NAME);
+      let result: boolean = await db.openDatabase();
+      if (result) {
+        try {
+          let section: CardSection[] = await db.getCards();
+          setData(section);
 
-     db.openDatabse().then((result: boolean) => {
-        setLoading(true);  
-        console.debug('Opened database:',result); 
-        db.getCards()
-          .then((section: CardSection[])  => {
-            data = section;
-            
-            setData(data);
-            setLoading(false);
-         
-            console.debug("has cards: ",data != []);
-          }).catch((error) => {
-            console.error("Error on get cards",error);
-          });
-      })
-      .catch((error) => {
-          console.error("Error on open database",error);
-          setLoading(false);
-      });
+          console.debug("has cards: ",data !== []);
+        } catch (error) {
+          console.error("Error on get cards",error);
+        }
+      }
+    }
+    finally
+    {
+      setLoading(false);  
+      console.debug("Reload end");
+    }
   }
 
   useFocusEffect(useCallback(() => {
@@ -62,7 +63,7 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
       return data;
     }
     else {
-      const newData = data.reduce((result, sectionData) => {
+        const newData = data.reduce((result, sectionData) => {
         const { title, sum, symbol, data } = sectionData;
 
         const filteredData = data.filter(function(item) {
@@ -115,14 +116,16 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
     />
   );
 
-  return (
+  return (   
     <Screen backgroundImage='ellipse6' style={{ padding: 0, marginBottom: 0 }} scrollable={false} >
+
       <View style={{ padding: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Title style={{ color: theme.text, fontSize: 25 }}>{lang.PASSWORD_RECALL_TITLE}</Title>
 
         <TouchableOpacity style={{ marginTop: 15, marginRight: 8 }} onPress={() => setSettingsVisible(true)}>
           <Icon size={28} name="settings" />
         </TouchableOpacity>
+        
         <SettingsModal
           isVisible={settingsVisible}
           close={() => setSettingsVisible(false)}
@@ -130,16 +133,21 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
           navigation={props.navigation}
         />
       </View>
-
-      <Text>{searchText}</Text>
-
-      <SearchBox 
-        placeholder = {lang.SEARCH_BOX}
-        onChangeText = { (text: string) => { setSearchText(text); } } 
-      />
+      
+      
+      <View>
+        <Text>{searchText}</Text>
+     
         
+        <SearchBox 
+          placeholder = {lang.SEARCH_BOX}
+          onChangeText = { (text: string) => { setSearchText(text); } } 
+        />
+       
+      </View>
+     
       <SectionList
-        style = {{ padding: 8 }}
+        style = {{ padding: 8}}
         sections = {searchFilterFunction(searchText)}
         refreshing = {loading}
         onRefresh = {reload}
@@ -163,3 +171,4 @@ export default function TabHomeScreen(props: { navigation: any, route: any }) {
     </Screen>
   )
 }
+

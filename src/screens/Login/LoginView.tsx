@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, ScrollView, StatusBar, StyleSheet, Image , Alert} from 'react-native';
+import { SafeAreaView, ScrollView, StatusBar, StyleSheet, Image , Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, TextInput, Keyboard} from 'react-native';
 import AsyncStorage from "@react-native-community/async-storage"
 import { Colors, Button, Input,  LoadingIndicator, Text, View, Layout, Icon, LanguageContext} from '@infominds/react-native-components';
 import { useColorScheme } from '@infominds/react-native-components';
@@ -14,6 +14,7 @@ Login.defaultProps = {
 }
 
 export default function Login(props: {
+  navigation: any;
   style: any,
   onLoginClick: () => void,
   customLoginFunction?: (username: string, password: string) => Promise<any>,
@@ -65,70 +66,60 @@ export default function Login(props: {
     setUsernameError(false);
   }
 
-  async function ExistsUser(username: string, password: string): boolean
+  async function ExistsUser(username: string, password: string): Promise<void>
   {
-    let success: boolean = false;
+    console.debug('Call ExistsUser start'); 
+
     const db: SysData = new SysData(DATABASE_NAME);
 
-    await db.openDatabse().then((result: boolean) => {
-      console.debug('Opened database:',result); 
-    
-      success = db.existsUser(username,password)
-          .then((result: boolean)  => {
-              return result; 
-          }).catch((error) => {
-              console.error("Error: ",error);
-          });
-      })
-      .catch((error) => {
-          console.error("Error on open database",error);
-      });
-    return success;
+    let result: boolean = await db.openDatabase();
+    if (result) {
+      let success: boolean = await db.existsUser(username,password);
+      if (success)
+      {
+        updateLoginData(username,password);
+
+        props.navigation.navigate('Root');
+      }
+      else {
+        Alert.alert(lang.INVALID_USER, '', [
+          {
+              text: "OK", onPress: () => {}
+          }
+        ]);
+      }
+    }
+
+    console.debug('Call ExistsUser end'); 
   }
 
-  async function AddNewUser(username: string, password: string): boolean
+  async function AddNewUser(username: string, password: string): Promise<void>
   {
-    let success: boolean = false;
+    console.debug('Call AddNewUser start'); 
     const db: SysData = new SysData(DATABASE_NAME);
 
-    await db.openDatabse().then((result: boolean) => {
-      console.debug('Opened database:',result); 
-      
-      success = db.insertUser(username,password)
-          .then((result: boolean)  => {
-              return result; 
-          }).catch((error) => {
-              console.error("Error: ",error);
-          });
-      })
-      .catch((error) => {
-          console.error("Error on open database",error);
-      });
+    let result: boolean = await db.openDatabase();
+    if (result) {
+      let success: boolean = await db.insertUser(username,password);
+      if (success)
+      { 
+        updateLoginData(username,password);
 
-    return success;
+        props.navigation.navigate('Root');
+      }
+      else {
+        Alert.alert(lang.INVALID_USER, '', [
+          {
+              text: "OK", onPress: () => {}
+          }
+        ]);
+      }
+    }
+
+    console.debug('Call AddNewUser end'); 
   }
 
-
-  function requestAuthenticationExt(): void
-  {
-    let epochTimeSeconds = Math.round((new Date()).getTime() / 1000).toString()
-    let payload = epochTimeSeconds + 'some message'
-
-    ReactNativeBiometrics.createSignature({
-        promptMessage: 'Sign in',
-        payload: payload
-      })
-      .then((resultObject) => {
-        const { success, signature } = resultObject
-
-        if (success) {
-          console.debug('Biometric ok');
-          //verifySignatureWithServer(signature, payload)
-        }
-      })
-  }
-
-  async function requestAuthentication(): void 
+  async function requestAuthentication(): Promise<void>
   {
     console.debug('Request biometrics');
     let success: boolean = false;
@@ -173,36 +164,6 @@ export default function Login(props: {
 
   }
 
-  let onLoginButtonPress = () => {
-    resetErrors();
-    setLoading(true);
-
-    ExistsUser(username,password)
-      .then((result: boolean) => {
-          if (result)
-          {
-            updateLoginData(username,password);
-
-            props.navigation.navigate('Root');
-          }
-          else {
-            Alert.alert(lang.INVALID_USER, '', [
-              {
-                  text: "OK", onPress: () => {
-                      
-                  }
-              }
-            ]);
-          }
-      })
-      .catch((error) => {
-          console.error(error);
-      })
-      .finally(() => {
-        setLoading(false);
-      })
-  }
-
   function updateLoginData(username: string, password: string): void
   {
     setUsername(username);
@@ -214,14 +175,36 @@ export default function Login(props: {
     console.debug('login: ' ,username,password);
   }
   
+
+  let onLoginButtonPress = () => {
+    resetErrors();
+    setLoading(true);
+    try
+    {
+      ExistsUser(username,password);     
+    }
+    finally
+    {
+      setLoading(false);
+    }
+  }
   
   let onAddNewUserButtonPress = () => {
     resetErrors();
     setLoading(true);
+    try
+    {
+      username ? AsyncStorage.setItem('username', username) : setUsernameError(true);
+      AsyncStorage.setItem('password', password);
 
-    username ? AsyncStorage.setItem('username', username) : setUsernameError(true);
-    AsyncStorage.setItem('password', password);
+      AddNewUser(username,password);
+    }
+    finally
+    {
+      setLoading(false);
+    }
 
+    /*
     AddNewUser(username,password)
       .then((result: boolean) => {
         
@@ -245,7 +228,7 @@ export default function Login(props: {
       })
       .finally(() => {
         setLoading(false);
-      })
+      })*/
   }
 
 
@@ -284,7 +267,6 @@ export default function Login(props: {
       <ScrollView contentContainerStyle={{ flex: 1, justifyContent: 'center' }} keyboardShouldPersistTaps='handled'>
         <View style={[styles.container, { marginTop: -65, left: 0, right: 0, backgroundColor: Colors[colorScheme].background }]} >
           <View style={[{ backgroundColor: Colors[colorScheme].background }, styles.login]}>
-
               <ScreenIcon></ScreenIcon>         
               <Input
                 placeholder={lang.USERNAME}
@@ -316,18 +298,12 @@ export default function Login(props: {
                 style={styles.loginButton}
                 title={lang.REGISTRATION}
                 onPress={onAddNewUserButtonPress} 
-              />
-                   
+              />   
           </View>
         </View>
-
-      </ScrollView>
+      </ScrollView>  
     </View>
   </SafeAreaView>
-
-
-                  
-     
   );
 }
 
@@ -370,5 +346,5 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: 'center'
-  }
+  },
 });

@@ -6,15 +6,17 @@
 */
 
 import * as React from 'react';
-import SQLite, { SQLiteDatabase } from 'react-native-sqlite-storage';
+import SQLite, { ResultSet, SQLiteDatabase } from 'react-native-sqlite-storage';
 import createGuid from "react-native-create-guid";
 import { RESULTS } from 'react-native-permissions';
+import { requireNativeComponent } from 'react-native';
+import { truncateSync } from 'fs-extra';
 
 SQLite.DEBUG(false);
 SQLite.enablePromise(true);
 
 export interface Card {
-  categoryid: string;
+  categoryid: string|null;
   cardid: string;
   description: string;
   username: string;
@@ -35,13 +37,12 @@ export interface CategoryType {
   description: string;
 }
 
-
 export const CATEGORY_DEFAULT = "{EDCA3EA3-5064-407D-9099-B0CAEEA385DE}";
-export const DATABASE_NAME: String = 'PasswordRecall.db';
+export const DATABASE_NAME: string = 'PasswordRecall.db';
 
 class SysData {
-    private dabaseName: string = "";
-    private db: SQLiteDatabase;
+    private databaseName: string = "";
+    private db: SQLiteDatabase | null;
 
     private ENCRYPT_KEY: string = "{B05B6A3B-AA72-44D7-B2DE-35EFC7B9443E}";
 
@@ -75,288 +76,266 @@ class SysData {
                                   "       CT.DESCRIPTION as categoryname " +
                                   " FROM CARDS C " +
                                   "    LEFT OUTER JOIN CATEGORIES CT ON (C.CATEGORYID=CT.CATEGORYID)	" +
-                                 " ORDER BY CT.DESCRIPTION,C.DESCRIPTION";
+                                  " ORDER BY CT.DESCRIPTION,C.DESCRIPTION";
 
-    private SQL_UPDATE_CARD = "UPDATE CARDS SET DESCRIPTION=?,URL=?,USERNAME=?,PASSWORD=?,NOTE=?,CATEGORYID=? " +
-                              "  WHERE CARDID=?";
+    private SQL_UPDATE_CARD: string = "UPDATE CARDS SET DESCRIPTION=?,URL=?,USERNAME=?,PASSWORD=?,NOTE=?,CATEGORYID=? " +
+                                      "  WHERE CARDID=?";
 
-    private SQL_INSERT_CARD = "INSERT INTO CARDS (CARDID,CATEGORYID,DESCRIPTION,URL,USERNAME,PASSWORD,NOTE) " +
-                              " VALUES (?,?,?,?,?,?,?) ";
+    private SQL_INSERT_CARD: string = "INSERT INTO CARDS (CARDID,CATEGORYID,DESCRIPTION,URL,USERNAME,PASSWORD,NOTE) " +
+                                      " VALUES (?,?,?,?,?,?,?) ";
    
-    private SQL_DELETE_CARD =  "DELETE FROM CARDS WHERE CARDID=?";
+    private SQL_DELETE_CARD: string =  "DELETE FROM CARDS WHERE CARDID=?";
 
-    private SQl_CATEGORIES = "SELECT CATEGORYID,DESCRIPTION FROM CATEGORIES " +
-                             " ORDER BY DESCRIPTION"; 
+    private SQl_CATEGORIES: string = "SELECT CATEGORYID,DESCRIPTION FROM CATEGORIES " +
+                                     " ORDER BY DESCRIPTION"; 
 
-    private SQL_USER = "SELECT USERNAME FROM USERS WHERE USERNAME=? AND PASSWORD=?";
-    private SQL_INSERT_USER = "INSERT INTO USERS (USERNAME,PASSWORD) VALUES (?,?) ";
+    private SQL_USER: string = "SELECT USERNAME FROM USERS WHERE USERNAME=? AND PASSWORD=?";
+    private SQL_INSERT_USER: string = "INSERT INTO USERS (USERNAME,PASSWORD) VALUES (?,?) ";
                                
-    constructor(databasename: string)
+    constructor(databaseName: string)
     {
-      this.dabaseName = databasename;
+      this.databaseName = databaseName;
 
       this.db = null;
-      console.debug("database name: " + this.dabaseName);
-    }
+      console.debug("database name: " + this.databaseName);
+    };
 
-    async openDatabse(): boolean {
+
+   async openDatabase(): Promise<boolean> {
       let success: boolean = false;
       await this.closeDatabase();
 
       console.debug('Open database ...');
-      // wait to open database
-      await SQLite.openDatabase({name: this.dabaseName, key: this.ENCRYPT_KEY, createFromLocation: 1, location: 'Documents'})
-          .then((DBConnection) => {
-          this.db = DBConnection;
-        // console.log('Database info',this.db); 
-          this.createTables(this.db);
-          success = true;
 
+      try {
+        this.db = await SQLite.openDatabase({name: this.databaseName, key: this.ENCRYPT_KEY, createFromLocation: 1, location: 'Documents'});
+        if ( this.db  != null) {
+          await this.createTables(this.db);
+
+          success = true;
           console.debug('Database opened',success);
         }
-        ).catch((error) => {
-            success = false;
-            console.error("Error on open database",error);
-
-            throw new Error(error); //raise error
-          }
-        );
-       
+      } 
+      catch (error) {
+        console.error("Error on open database",error);
+      }
+     
       return success;
    }
 
-   closeDatabase(): void {
-      if (this.db) {
-        console.debug("Closing database ...");
-
-        this.db.close().then((status) => {
-          console.log("Database closed",status);
-      }).catch((error) => {
-        console.error("Error on close database",error);
-      });
-
-      this.db = null;
-      } else {
-        console.debug("Database was not opened");
+   async closeDatabase(): Promise<void> {   
+      console.debug("Closing database...");   
+     
+      if (this.db != null) {
+        try {
+          await this.db.close();
+          this.db = null;
+          console.debug("Database closed");
+        } 
+        catch (error) {
+          console.debug("Database closed error: ",error);
+        }
       }
+
+      console.debug("Closing database exit");         
    }
 
-   private createTables(db: SQLiteDatabase) {
+   private async createTables(db: SQLiteDatabase) {
       if (!db)
         return;
 
       console.debug("Create tables if not exists ...");
       
-      db.executeSql(this.SQL_CREATE_USERS).catch((error) => {
-        console.log("Error on create table",error);
-      });
+      try {
+        console.debug("Create tables USERS");
+        db.executeSql(this.SQL_CREATE_USERS);
 
-      db.executeSql(this.SQL_CREATE_CARDS).catch((error) => {
-        console.debug("Error on create table",error);
-      });
+        console.debug("Create tables CARDS");
+        db.executeSql(this.SQL_CREATE_CARDS);
 
-      db.executeSql(this.SQL_CREATE_CATEGORY).catch((error) => {
+        console.debug("Create tables CATEGORY");
+        db.executeSql(this.SQL_CREATE_CATEGORY);
+      } 
+      catch (error) {
         console.debug("Error on create table",error);
-      });
+      }
 
       console.debug("Table created");
    }
 
-   getCards(): CardSection[]  {
-      return new Promise<CardSection[]>((resolve, reject) => {
-        this.db.executeSql(this.SQL_CARDATA,[])
-            .then(([resultset]) => {
-                let result: CardSection[] = [];
-                let cards: Card[] =[];
-                let sectionTitle: string = "";
-                let lastsection: string = "";
-                       
-                for (let i = 0; i < resultset.rows.length; i++) {
-                  const sectionFields = {categoryid, categoryname} = resultset.rows.item(i);
-                  const cardFields = {categoryid, cardid, cardname, url, username, password, note, pincode} = resultset.rows.item(i);
-                 
-                  if (lastsection == "")  
-                    lastsection = sectionFields.categoryid;
-
-                  if (lastsection != sectionFields.categoryid) {
-                    lastsection = sectionFields.categoryid;
-                    result.push({title: sectionTitle, count: cards.length, data: cards});
+   getCards(): Promise<CardSection[]>  {
+    return new Promise<CardSection[]>((resolve, reject) => {
+        if (this.db != null)
+        {
+          this.db.executeSql(this.SQL_CARDATA,[])
+              .then(([resultset]) => {
+                  let result: CardSection[] = [];
+                  let cards: Card[] =[];
+                  let sectionTitle: string = "";
+                  let lastsection: string = "";
+                        
+                  for (let i = 0; i < resultset.rows.length; i++) {
+                    const sectionFields = {categoryid, categoryname} = resultset.rows.item(i);
+                    const cardFields = {categoryid, cardid, cardname, url, username, password, note, pincode} = resultset.rows.item(i);
                   
-                    sectionTitle = ""; 
-                    cards = [];
+                    if (lastsection == "")  
+                      lastsection = sectionFields.categoryid;
+
+                    if (lastsection != sectionFields.categoryid) {
+                      lastsection = sectionFields.categoryid;
+                      result.push({title: sectionTitle, count: cards.length, data: cards});
+                    
+                      sectionTitle = ""; 
+                      cards = [];
+                    }
+
+                    sectionTitle = sectionFields.categoryname;
+
+                    cards.push({categoryid: cardFields.categoryid, 
+                                cardid: cardFields.cardid, 
+                                description: cardFields.cardname, 
+                                username: cardFields.username, 
+                                password: cardFields.password,
+                                note: cardFields.note, 
+                                url: cardFields.url, 
+                                pincode: cardFields.pincode});
                   }
+                  
+                  if (sectionTitle != "")
+                    result.push({title: sectionTitle, count: cards.length, data: cards});
 
-                  sectionTitle = sectionFields.categoryname;
+                  return result;
+              })
+              .then(result => {
+                resolve(result);
+              })
+              .catch(error => {
+                  console.error('error', error);
+                  reject(error);
+              });
+        }
+    });
+  }
 
-                  cards.push({categoryid: cardFields.categoryid, 
-                              cardid: cardFields.cardid, 
-                              description: cardFields.cardname, 
-                              username: cardFields.username, 
-                              password: cardFields.password,
-                              note: cardFields.note, 
-                              url: cardFields.url, 
-                              pincode: cardFields.pincode});
+  async updateCard(card: Card): Promise<boolean> {
+    let success: boolean = false;
+    
+    if (this.db != null) {
+      await this.db.transaction((resultset) => {
+        resultset.executeSql(this.SQL_UPDATE_CARD,
+                              [card.description, card.url, 
+                               card.username, card.password, 
+                               card.note, 
+                               card.categoryid,
+                               card.cardid],
+                              (resultset, results) => {
+            success = (results.rowsAffected > 0);            
+          }
+        )
+      });
+    }
+
+    console.debug('Has updated card?',success);
+    return success;
+  }
+
+  async insertCard(card: Card): Promise<boolean> {
+    let success: boolean = false;
+    
+    if (this.db != null) {
+      await this.db.transaction((resultset) => {
+        resultset.executeSql(this.SQL_INSERT_CARD,
+                              [card.cardid,card.categoryid,
+                               card.description, card.url, 
+                               card.username, card.password, 
+                               card.note],
+                              (resultset, results) => {
+            success = (results.rowsAffected > 0);            
+          }
+        )
+      });
+    }
+
+    console.debug('Has inserted card?',success);
+    return success;
+  }
+
+  async deleteCard(cardid: string): Promise<boolean> {
+    let success: boolean = false;
+    
+    if (this.db != null) {
+      await this.db.transaction((resultset) => {
+        resultset.executeSql(this.SQL_DELETE_CARD,[cardid],(resultset, results) => {
+            success = (results.rowsAffected > 0);            
+          }
+        )
+      });
+    }
+
+    console.debug('Has deleted card?',success);
+    return success;
+  }
+
+  getCategoryTypes(): Promise<CategoryType[]>  {
+    return new Promise<CategoryType[]>((resolve, reject) => {
+      if (this.db)
+      {
+        this.db.executeSql(this.SQl_CATEGORIES,[])
+            .then(([resultset]) => {
+                let result: CategoryType[] =[];
+
+                for (let i = 0; i < resultset.rows.length; i++) {
+                  const categoryFields = {categoryid, description} = resultset.rows.item(i);
+
+                  result.push({categoryid: categoryFields.CATEGORYID, description: categoryFields.DESCRIPTION});
                 }
                 
-                if (sectionTitle != "")
-                  result.push({title: sectionTitle, count: cards.length, data: cards});
-
                 return result;
             })
             .then(result => {
               resolve(result);
-             })
+            })
             .catch(error => {
                 console.error('error', error);
                 reject(error);
             });
+      }
     });
-  }
-
-  async updateCard(card: Card): boolean {
-    let success: boolean = false;
-    
-    await this.db.transaction((resultset) => {
-      resultset.executeSql(this.SQL_UPDATE_CARD,
-                           [card.description, card.url, 
-                            card.username, card.password, 
-                            card.note, 
-                            card.categoryid,
-                            card.cardid],(resultset, results) => {
-          console.debug('Results', results.rowsAffected);
-          if (results.rowsAffected > 0) {
-            success = true;
-            console.debug('Update ok');
-          } 
-          else {
-            console.debug('Update Failed');
-          }
-        }
-      );
-    });
-
-    return success;
-  }
-
-  async insertCard(card: Card): boolean {
-    let success: boolean = false;
-  
-    await this.db.transaction((resultset) => {
-      resultset.executeSql(this.SQL_INSERT_CARD,
-                           [card.cardid, card.categoryid,
-                            card.description, card.url, 
-                            card.username, card.password, card.note],(resultset, results) => {
-          console.debug('Results', results.rowsAffected);
-          if (results.rowsAffected > 0) {
-            success = true;
-            console.debug('Insert ok');
-          } 
-          else {
-            console.debug('Insert Failed');
-          }
-        }
-      );
-    });
-   
-    return success;
-  }
-
-  async deleteCard(cardid: string): boolean {
-    let success: boolean = false;
-  
-    await this.db.transaction((resultset) => {
-      resultset.executeSql(this.SQL_DELETE_CARD,[cardid],(resultset, results) => {
-          console.debug('Results', results.rowsAffected);
-          if (results.rowsAffected > 0) {
-            success = true;
-            console.debug('Delete ok');
-          } 
-          else {
-            console.debug('Delete Failed');
-          }
-        }
-      );
-    });
-   
-    return success;
-  }
-
-  getCategoryTypes(): CategoryType[]  {
-    return new Promise<CardSection[]>((resolve, reject) => {
-      this.db.executeSql(this.SQl_CATEGORIES,[])
-          .then(([resultset]) => {
-              let result: CategoryType[] =[];
-
-              for (let i = 0; i < resultset.rows.length; i++) {
-                const categoryFields = {categoryid, description} = resultset.rows.item(i);
-
-                result.push({categoryid: categoryFields.CATEGORYID, description: categoryFields.DESCRIPTION});
-              }
-              
-              return result;
-          })
-          .then(result => {
-             resolve(result);
-           })
-          .catch(error => {
-              console.error('error', error);
-              reject(error);
-          });
-    });
-  }
-
-  async getCategoryTypes2(): CategoryType[]  {
-    let listOfCategories: CategoryType[] = [];
-
-     await this.db.executeSql(this.SQl_CATEGORIES,[])
-          .then(([resultset]) => {
-              for (let i = 0; i < resultset.rows.length; i++) {
-                const categoryFields = {categoryid, description} = resultset.rows.item(i);
-
-                listOfCategories.push({categoryid: categoryFields.CATEGORYID, description: categoryFields.DESCRIPTION});
-              }
-          })
-          .catch(error => {
-              console.error('error', error);
-          });
-
-    return listOfCategories;
   }
    
-  async existsUser(username: string, password: string): boolean {
+  async existsUser(username: string, password: string): Promise<boolean> {
     let success: boolean = false;
 
-    await this.db.executeSql(this.SQL_USER,[username,password])
-        .then(([resultset]) => {
-          console.debug('Search from: ', username,password);
-          
-          success = (resultset.rows.length >= 1);
-        })
-        .catch(error => {
-            console.error('error', error);
+    console.debug('Search from: ', username,password);
+
+    if (this.db != null) {
+        await this.db.transaction((resultset) => {
+          resultset.executeSql(this.SQL_USER,[username,password],(resultset, results) => {
+              success = (results.rows.length >= 1);            
+            }
+          );
         });
+    }
 
+    console.debug('Has found user?:', success);
     return success;
   }
 
-  async insertUser(username: string, password: string): boolean {
+  async insertUser(username: string, password: string): Promise<boolean> {
     let success: boolean = false;
   
-    console.debug("user:",username,password);
-    await this.db.transaction((resultset) => {
-      resultset.executeSql(this.SQL_INSERT_USER,[username,password],(resultset, results) => {
-          console.debug('Results', results.rowsAffected);
-          if (results.rowsAffected > 0) {
-            success = true;
-            console.debug('Insert user ok');
-          } 
-          else {
-            console.debug('Insert user Failed');
+    console.debug("Insert user:",username,password);
+
+    if (this.db != null) {
+      await this.db.transaction((resultset) => {
+        resultset.executeSql(this.SQL_INSERT_USER,[username,password],(resultset, results) => {
+            success = (results.rowsAffected > 0);
           }
-        }
-      );
-    });
+        );
+      });
+    }
    
+    console.debug('Has inserted user?:', success);
     return success;
   }
 }
