@@ -6,7 +6,7 @@ import { useColorScheme } from '@infominds/react-native-components';
 
 import PasswordInput from '../../components/PasswordInput';
 import SysData, {DATABASE_NAME} from "../../utils/sysdata";
-import ReactNativeBiometrics   from 'react-native-biometrics';
+import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics'
 
 
 Login.defaultProps = {
@@ -124,17 +124,18 @@ export default function Login(props: {
     console.debug('Request biometrics');
     let success: boolean = false;
 
-    const {available,biometryType} = await ReactNativeBiometrics.isSensorAvailable();
+    const rnBiometrics = new ReactNativeBiometrics();
+    const {available,biometryType} = await rnBiometrics.isSensorAvailable();
 
-    if (available && biometryType === ReactNativeBiometrics.TouchID) {
+    if (available && biometryType === BiometryTypes.TouchID) {
       console.debug('TouchID is supported');
       success = true;
     } 
-    else if (available && biometryType === ReactNativeBiometrics.FaceID) {
+    else if (available && biometryType === BiometryTypes.FaceID) {
       console.debug('FaceID is supported');
       success = true;
     } 
-    else if (available && biometryType === ReactNativeBiometrics.Biometrics) {
+    else if (available && biometryType === BiometryTypes.Biometrics) {
       console.debug('Biometrics is supported');
       success = true;
     } 
@@ -146,7 +147,7 @@ export default function Login(props: {
     if (!success) 
       return;
 
-    ReactNativeBiometrics.simplePrompt({promptMessage: 'Confirm fingerprint'})
+    rnBiometrics.simplePrompt({promptMessage: 'Confirm fingerprint'})
       .then((resultObject) => {
         const { success } = resultObject
 
@@ -162,6 +163,7 @@ export default function Login(props: {
         console.debug('biometrics failed')
       });
 
+      <cd className=""></cd>
   }
 
   function updateLoginData(username: string, password: string): void

@@ -8,6 +8,8 @@
 	<string>Password Recall</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleGetInfoString</key>
+	<string></string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -24,6 +26,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -41,6 +45,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>This permission will be used to scan QR codes for faster login</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>I need your face!</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This permission will be used to show the position of clients on a map in the app.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -48,7 +54,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This permission will be used to upload images to Radix</string>
 	<key>NSPhotoLibraryUsageDescription </key>
-	<string>This permission will be used to upload images to Radix</string>
+	<string>This permission will be used to upload images</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>AntDesign.ttf</string>

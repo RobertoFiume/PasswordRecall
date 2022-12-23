@@ -10,7 +10,4 @@
    <FileRef
       location = "group:PasswordRecall.xcodeproj">
    </FileRef>
-   <FileRef
-      location = "group:PasswordRecall.xcodeproj">
-   </FileRef>
 </Workspace>
