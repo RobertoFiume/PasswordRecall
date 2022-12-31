@@ -80,7 +80,7 @@ declare module 'modal-react-native-web'
 
 declare module '@react-native-community/picker'
 
-declare module '@infominds/react-native-license'
+//declare module '@infominds/react-native-license'
 
 declare module 'radio-buttons-react-native'
 

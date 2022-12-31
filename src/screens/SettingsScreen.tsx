@@ -7,7 +7,7 @@ import {
 } from '@infominds/react-native-components'
 import { getLanguageJSON } from '../utils/LanguageUtils'
 import Separator from '../components/Separator'
-import { LicenseGlobals, LogoutButton } from '@infominds/react-native-license'
+ 
 import DeviceInfo from 'react-native-device-info';
 import devEnviroments from '../devEnviroments';
 import PickerModal from '../components/PickerModal'
@@ -174,6 +174,9 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
 
   }
 
+  const OnLogOut = async () => {
+    props.navigation.replace('Login')
+  }
 
   return (
     <View style={{ margin: 0 }} >
@@ -214,10 +217,11 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
 
             <Separator />
 
-            <LogoutButton logoutNavigation={() => {
-             // AsyncStorage.removeItem('selectedCompany');
-              props.navigation.replace('Login')
-            }} />
+            <Button 
+              style = {styles.buttonLogout}
+              title = "Logout"
+              onPress = {() => OnLogOut()}
+            />
 
            <Button 
              style = {styles.buttonBackupAndRestore}
@@ -245,7 +249,7 @@ export default function Settings(props: { navigation: any, onSettingsChange: () 
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={styles.info}>{lang.SETTINGS_LICENSE}: </Text>
-              <Text style={styles.info}>{LicenseGlobals.license}</Text>
+          
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -274,5 +278,9 @@ const styles = StyleSheet.create({
   buttonBackupAndRestore:
   {
     backgroundColor: "#00A1FE",
+  },
+  buttonLogout:
+  {
+    backgroundColor: Colors.red,
   }
 });

@@ -1,4 +1,4 @@
-import LicenseGlobals from "@infominds/react-native-license";
+//import LicenseGlobals from "@infominds/react-native-license";
 
 export default {
     createGetRequestOptions() {

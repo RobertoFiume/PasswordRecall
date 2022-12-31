@@ -1,4 +1,4 @@
-import { LicenseGlobals } from '@infominds/react-native-license';
+//import { LicenseGlobals } from '@infominds/react-native-license';
 import ImAnalytics from "../utils/ImAnalytics";
 import ApiUtils from './ApiUtils';
 import base64 from 'react-native-base64'
@@ -7,6 +7,7 @@ import {
 } from '../types';
 import AsyncStorage from '@react-native-community/async-storage';
 
+/*
 function getExpenses(isHistory: boolean) {
     return new Promise<Expense[]>((resolve, reject) => {
         fetch(LicenseGlobals.baseUrl + "/api/expenses?IsHistory=" + isHistory, ApiUtils.createGetRequestOptions())
@@ -20,7 +21,7 @@ function getExpenses(isHistory: boolean) {
                 reject(error);
             });
     })
-}
+}*/
 
 const useApi = {
     login(username: string, password: string, langstr?: string, company?: string) {
